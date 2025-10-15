@@ -1,0 +1,71 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create config.js with Supabase credentials
+        run: |
+          cat > static/config.js << 'EOF'
+          // Supabase Configuration
+          // This file initializes the Supabase JavaScript client for the GeoMap application.
+          // Configuration is injected during GitHub Pages deployment from repository secrets.
+          // IMPORTANT: Only use the ANON (anonymous/public) key here. Never expose the SERVICE_ROLE key in client-side code.
+
+          const SUPABASE_URL = '${{ secrets.SUPABASE_URL }}';
+          const SUPABASE_ANON_KEY = '${{ secrets.SUPABASE_ANON_KEY }}';
+
+          // Check if the Supabase library is loaded from CDN
+          if (typeof supabase === 'undefined') {
+              console.error('Supabase library not loaded. Please check the CDN script in index.html.');
+          } else {
+              // Destructure createClient from the global supabase object
+              const { createClient } = supabase;
+              
+              // Initialize the Supabase client
+              const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+              
+              // Expose the client globally for use by other scripts (e.g., app.js)
+              window.supabaseClient = supabaseClient;
+              
+              // Log initialization (remove in production if desired)
+              if (SUPABASE_URL && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+                  console.log('Supabase client initialized successfully');
+              } else {
+                  console.error('Supabase credentials not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY secrets.');
+              }
+          }
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './static'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

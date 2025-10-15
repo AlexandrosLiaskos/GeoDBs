@@ -1,0 +1,82 @@
+# Environment and Configuration Files
+.env
+.env.local
+.env.*.local
+static/config.js
+
+# Database Files (SQLite - not needed for Supabase frontend)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+floods_greece.db
+
+# Python Backend Files (not needed for Supabase frontend)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+
+# FastAPI Backend (not needed for Supabase frontend)
+main.py
+database.py
+requirements.txt
+models/
+routers/
+services/
+
+# Shapefile Data (processed data is in Supabase)
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.sbn
+*.sbx
+Floods_GR.*
+
+# Backup Files
+*.tar.gz
+*.zip
+*_backup_*
+GeoMap_backup_*
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Operating System Files
+Thumbs.db
+.DS_Store
+
+# Temporary Files
+*.tmp
+*.temp

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Greek Floods Web Map</title>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <nav class="header-nav">
+                    <a href="/" class="nav-link active">Home</a>
+                    <a href="/submissions" class="nav-link">Submissions</a>
+                </nav>
+                <div class="header-title">
+                    <h1>Greek Floods Web Map</h1>
+                    <p class="subtitle">Interactive visualization of flood events in Greece</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Empty placeholder for balance -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Mobile Controls -->
+        <div class="mobile-controls">
+            <button id="mobile-filters-toggle" class="mobile-toggle-btn">Filters</button>
+            <button id="mobile-stats-toggle" class="mobile-toggle-btn">Stats</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <!-- Mobile Close Button -->
+                <button class="mobile-sidebar-close" id="mobile-sidebar-close" aria-label="Close sidebar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="sidebar-content">
+                    <!-- Tab Navigation (Desktop Only) -->
+                    <div class="tab-nav">
+                        <button class="tab-button active" data-tab="filters">FILTERS</button>
+                        <button class="tab-button" data-tab="stats">STATISTICS</button>
+                    </div>
+                    
+                    <!-- Filters Tab Content -->
+                    <div class="tab-content active" id="filters-tab">
+                        <!-- Year Filter -->
+                        <div class="filter-group">
+                        <label for="year-filter">Year:</label>
+                        <select id="year-filter">
+                            <option value="">All Years</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Location Filter -->
+                    <div class="filter-group">
+                        <label for="location-filter">Location:</label>
+                        <select id="location-filter">
+                            <option value="">All Locations</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Cause Filter -->
+                    <div class="filter-group">
+                        <label for="cause-filter">Cause:</label>
+                        <select id="cause-filter">
+                            <option value="">All Causes</option>
+                        </select>
+                    </div>
+                    
+                        <!-- Clear Filters Button -->
+                        <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All Filters</button>
+                    </div>
+                    
+                    <!-- Statistics Tab Content -->
+                    <div class="tab-content" id="stats-tab">
+                        <div id="stats-content">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Events</span>
+                                <span id="total-events" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Year Range</span>
+                                <span id="year-range" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Events with Casualties</span>
+                                <span id="events-casualties" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Visible Points</span>
+                                <span id="visible-points" class="stat-value">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Map Container -->
+            <main class="map-container">
+                <div id="map"></div>
+                
+                <!-- Loading Indicator -->
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading flood data...</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- Flood Detail Modal -->
+        <div id="flood-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Flood Event Details</h3>
+                    <button class="close" aria-label="Close modal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="flood-details">
+                        <!-- Details will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <span>NKUA - Geology & Geoenvironment - Niki Evelpidou Team</span>
+                <span class="footer-divider">|</span>
+                <span>© 2026 A. Liaskos</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Configuration -->
+    <script src="/static/config.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

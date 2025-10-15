@@ -1,0 +1,498 @@
+/* ===============================================
+   Submissions Page - Minimalist Design Extension
+   =============================================== */
+
+/* Inherits all CSS variables and base styles from styles.css */
+
+/* Main Container */
+.submissions-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Filters Section - Minimalist Black & White */
+.submissions-filters {
+    background: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0; /* Sharp corners */
+}
+
+.filter-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-select,
+.filter-search {
+    flex: 1;
+    min-width: 150px;
+    padding: 0.75rem 1rem;
+    background: var(--background-primary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast);
+    outline: none;
+    appearance: none;
+}
+
+.filter-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    padding-right: 2rem;
+}
+
+.filter-select:hover,
+.filter-search:hover {
+    border-bottom-color: var(--text-primary);
+}
+
+.filter-select:focus,
+.filter-search:focus {
+    border-bottom-color: var(--primary-color);
+    background-color: var(--background-primary);
+}
+
+.filter-search {
+    min-width: 250px;
+}
+
+/* Statistics Bar - Minimalist */
+.stats-bar {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    border-radius: 0;
+}
+
+.stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--border-color);
+}
+
+.stat-chip:first-child {
+    border-left: none;
+    padding-left: 0;
+}
+
+.stat-label {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: var(--primary-color);
+}
+
+/* Remove color variations - all black */
+.stat-value.pending,
+.stat-value.approved {
+    color: var(--primary-color);
+}
+
+/* Table - Minimalist Design */
+.table-container {
+    background: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+    border-radius: 0;
+}
+
+.submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.submissions-table thead {
+    background: var(--background-primary);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.submissions-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary-color);
+    border-right: 1px solid var(--border-color);
+}
+
+.submissions-table th:last-child {
+    border-right: none;
+}
+
+.submissions-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    transition: none; /* Remove transition for cleaner look */
+}
+
+.submissions-table tbody tr:hover {
+    background: var(--background-primary); /* No hover background change */
+    border-bottom: 1px solid var(--primary-color); /* Subtle border emphasis */
+}
+
+.submissions-table td {
+    padding: 0.875rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    border-right: 1px solid var(--border-light);
+}
+
+.submissions-table td:last-child {
+    border-right: none;
+}
+
+/* Status Badges - Minimalist Black & White */
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0; /* Sharp corners */
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all var(--transition-fast);
+}
+
+.status-badge.pending {
+    background: var(--background-primary);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+}
+
+.status-badge.approved {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    border: 1px solid var(--primary-color);
+}
+
+.status-badge.rejected {
+    background: var(--background-primary);
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+    font-weight: 600;
+}
+
+.status-badge.needs_info {
+    background: var(--background-primary);
+    color: var(--text-secondary);
+    border: 1px dashed var(--primary-color);
+}
+
+/* Type Badges - Minimalist */
+.type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--primary-color);
+    border-radius: 0; /* Sharp corners */
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: var(--background-primary);
+    color: var(--text-primary);
+}
+
+.type-badge.correction {
+    border-left: 3px solid var(--primary-color);
+    padding-left: 0.4rem;
+}
+
+.type-badge.addition {
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.type-badge.verification {
+    border: 1px dashed var(--primary-color);
+}
+
+/* Action Buttons - Minimalist */
+.action-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.65rem;
+    border: 1px solid var(--primary-color);
+    background: var(--background-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: 0.25rem;
+    border-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 500;
+}
+
+.action-btn:hover {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+/* Loading and Empty States - Minimalist */
+.loading-state,
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state svg {
+    stroke: var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: var(--primary-color);
+    margin: 1rem 0 0.5rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 1.125rem;
+}
+
+.empty-state p {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Pagination - Minimalist */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 2rem;
+}
+
+.page-btn {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--primary-color);
+    background: var(--background-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-radius: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.page-btn:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+.page-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+#page-info {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Submission Form - Minimalist */
+.submission-form {
+    max-width: 600px;
+    max-height: 85vh;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--background-primary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast);
+    outline: none;
+}
+
+.form-group select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    padding-right: 2rem;
+}
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-bottom-color: var(--text-primary);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-bottom-color: var(--primary-color);
+    background-color: var(--background-primary);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+.form-divider {
+    height: 1px;
+    background: var(--primary-color);
+    margin: 2rem 0;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--primary-color);
+}
+
+/* Community Actions in Modal */
+.community-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.btn-report {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.btn-report:hover {
+    background: var(--primary-light);
+    transform: translateY(-1px);
+}
+
+.btn-report svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .header-actions .btn-primary {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.65rem;
+    }
+    
+    .submissions-container {
+        padding: 0;
+    }
+    
+    /* Mobile controls visible */
+    .mobile-controls {
+        display: block;
+    }
+    
+    /* Filters become dropdown */
+    .submissions-filters {
+        display: none;
+        margin: 0;
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+    
+    .submissions-filters.active {
+        display: block;
+    }
+    
+    .filter-row {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .table-container {
+        margin-top: 1rem;
+    }
+    
+    .filter-select,
+    .filter-search {
+        width: 100%;
+    }
+    
+    .stats-bar {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .submissions-table {
+        font-size: 0.75rem;
+    }
+    
+    .submissions-table th,
+    .submissions-table td {
+        padding: 0.5rem;
+    }
+    
+    /* Hide some columns on mobile */
+    .submissions-table th:nth-child(4),
+    .submissions-table td:nth-child(4) {
+        display: none;
+    }
+}

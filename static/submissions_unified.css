@@ -1,0 +1,631 @@
+/* ===============================================
+   Submissions Page - Unified Minimalist Design
+   Extends main styles.css with consistent aesthetic
+   =============================================== */
+
+/* Override any conflicting styles to match main page */
+
+/* Sidebar for filters - matching main page sidebar */
+.sidebar-filters {
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.sidebar-filters .sidebar-content {
+    padding: var(--spacing-xl);
+}
+
+/* Tabs matching main page */
+.tabs-container {
+    margin-bottom: var(--spacing-xl);
+}
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--spacing-lg);
+}
+
+.tab-button {
+    flex: 1;
+    padding: 0.75rem;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid transparent;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tab-button:hover {
+    background: var(--background-secondary);
+}
+
+.tab-button.active {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    border-color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+/* Filter controls matching main page */
+.filter-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.filter-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+}
+
+.filter-select,
+.filter-input {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+/* Constrain dropdown size for better UX */
+.filter-select {
+    /* Force browsers to show compact dropdowns */
+    size: 5; /* Shows 5 items at once */
+    max-height: 180px; /* Maximum height constraint */
+    overflow-y: auto;
+}
+
+/* For browsers that support it, style the dropdown options */
+.filter-select option {
+    padding: 0.4rem 0.6rem;
+}
+
+/* Custom scrollbar for select elements */
+.filter-select::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-select::-webkit-scrollbar-track {
+    background: var(--background-tertiary, #f5f5f5);
+}
+
+.filter-select::-webkit-scrollbar-thumb {
+    background: var(--border-color, #ddd);
+    border-radius: 3px;
+}
+
+.filter-select::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color, #000);
+}
+
+.filter-select:hover,
+.filter-input:hover {
+    border-color: var(--text-primary);
+}
+
+.filter-select:focus,
+.filter-input:focus {
+    border-color: var(--primary-color);
+}
+
+/* Statistics section matching main page */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    padding: var(--spacing-md);
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Main submissions area */
+.submissions-content {
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header bar for submissions */
+.submissions-header {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.submissions-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+}
+
+.submissions-count {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Table container */
+.table-wrapper {
+    flex: 1;
+    overflow: auto;
+    padding: var(--spacing-lg);
+}
+
+/* Minimalist table */
+.submissions-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.submissions-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.submissions-table td {
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.submissions-table tbody tr {
+    transition: none;
+}
+
+.submissions-table tbody tr:hover {
+    background: var(--background-secondary);
+}
+
+/* Status indicators - NO COLORS, only borders */
+.status-indicator {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    font-size: 0.6rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid var(--primary-color);
+    color: var(--text-primary);
+}
+
+.status-indicator.pending {
+    border-style: dashed;
+}
+
+.status-indicator.approved {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+.status-indicator.rejected {
+    border-width: 2px;
+}
+
+.status-indicator.needs-info {
+    border-style: dotted;
+}
+
+/* Type indicators - minimalist */
+.type-indicator {
+    display: inline-block;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: 1px solid var(--text-secondary);
+    color: var(--text-secondary);
+}
+
+.type-indicator.correction {
+    border-left-width: 3px;
+    border-left-color: var(--primary-color);
+}
+
+.type-indicator.addition {
+    border-bottom-width: 2px;
+    border-bottom-color: var(--primary-color);
+}
+
+/* Action buttons - matching main page */
+.action-button {
+    padding: 0.375rem 0.625rem;
+    background: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    color: var(--text-primary);
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: 0.25rem;
+}
+
+.action-button:hover {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+/* Empty state */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    height: 100%;
+}
+
+.empty-state-icon {
+    width: 48px;
+    height: 48px;
+    stroke: var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.empty-state-title {
+    font-size: 0.9rem;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Loading state */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    height: 100%;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Pagination - minimalist */
+.pagination-bar {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.page-button {
+    padding: 0.5rem 1rem;
+    background: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    color: var(--text-primary);
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.page-button:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+.page-button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: var(--border-color);
+}
+
+.page-info {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Modal for submission form - matching main page modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    max-height: 85vh;
+    overflow: hidden;
+    border: 1px solid #000;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-title {
+    color: #000;
+    font-size: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 200ms ease;
+}
+
+.modal-close:hover {
+    background: #f0f0f0;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(85vh - 80px);
+}
+
+/* Form styles matching main page */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+    border-color: var(--text-primary);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    border-color: var(--primary-color);
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+/* Apply compact dropdown styling to form selects */
+.form-select {
+    /* Limit dropdown height for better UX */
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+/* Style form select options */
+.form-select option {
+    padding: 0.4rem 0.6rem;
+    line-height: 1.4;
+}
+
+/* Custom scrollbar for form select elements */
+.form-select::-webkit-scrollbar {
+    width: 6px;
+}
+
+.form-select::-webkit-scrollbar-track {
+    background: var(--background-tertiary, #f5f5f5);
+}
+
+.form-select::-webkit-scrollbar-thumb {
+    background: var(--border-color, #ddd);
+    border-radius: 3px;
+}
+
+.form-select::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color, #000);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Submission Details - uses main page .detail-item styles */
+#submission-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.btn-submit,
+.btn-cancel {
+    padding: 0.625rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid var(--primary-color);
+}
+
+.btn-submit {
+    background: var(--primary-color);
+    color: var(--text-inverse);
+}
+
+.btn-submit:hover {
+    background: var(--primary-light);
+}
+
+.btn-cancel {
+    background: var(--background-primary);
+    color: var(--text-primary);
+}
+
+.btn-cancel:hover {
+    background: var(--background-secondary);
+}
+
+/* Responsive design matching main page */
+@media (max-width: 768px) {
+    .main-content {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding: 0;
+    }
+    
+    .sidebar-filters {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        background: white;
+    }
+    
+    .sidebar-filters.active {
+        display: block;
+    }
+    
+    .submissions-content {
+        border-left: none;
+        border-right: none;
+        border-radius: 0;
+    }
+    
+    .table-wrapper {
+        padding: var(--spacing-md);
+    }
+    
+    .submissions-table {
+        font-size: 0.75rem;
+    }
+    
+    .submissions-table th,
+    .submissions-table td {
+        padding: 0.5rem;
+    }
+    
+    /* Hide some columns on mobile */
+    .hide-mobile {
+        display: none;
+    }
+}
