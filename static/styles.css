@@ -940,23 +940,48 @@ h6 { font-size: 0.75rem; }
 .footer {
     background: var(--background-primary);
     color: var(--text-secondary);
-    padding: 0.75rem 0;
+    padding: 1rem 0;
     border-top: 1px solid var(--border-color);
     flex-shrink: 0;
 }
 
 .footer-content {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 0 1.5rem;
     font-size: 0.75rem;
     letter-spacing: 0.02em;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-citation {
+    text-align: center;
+    line-height: 1.6;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.footer-meta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
 }
 
 .footer-divider {
     color: var(--border-color);
+}
+
+.github-link {
+    display: inline-flex;
+    align-items: center;
+    transition: opacity 0.2s;
+}
+
+.github-link:hover {
+    opacity: 0.7;
 }
 
 /* Marker Cluster Customization */
@@ -1198,10 +1223,23 @@ body::-webkit-scrollbar-thumb:hover {
     
     .footer-content {
         padding: 0 1rem;
+        font-size: 0.65rem;
     }
     
     .footer {
-        padding: 0.75rem 0;
+        padding: 1rem 0;
+    }
+    
+    .footer-citation {
+        font-size: 0.65rem;
+        line-height: 1.5;
+        text-align: left;
+    }
+    
+    .footer-meta {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.7rem;
     }
 }
 
