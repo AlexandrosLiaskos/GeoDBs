@@ -156,6 +156,37 @@ class SubmissionsManager {
                 }
             });
         }
+        
+        // References modal controls
+        const referencesBtn = document.getElementById('references-btn');
+        const referencesModal = document.getElementById('references-modal');
+        const closeReferences = document.getElementById('close-references');
+        
+        if (referencesBtn && referencesModal) {
+            referencesBtn.addEventListener('click', () => {
+                referencesModal.classList.add('active');
+            });
+            
+            if (closeReferences) {
+                closeReferences.addEventListener('click', () => {
+                    referencesModal.classList.remove('active');
+                });
+            }
+            
+            // Close when clicking outside modal content
+            referencesModal.addEventListener('click', (event) => {
+                if (event.target === referencesModal) {
+                    referencesModal.classList.remove('active');
+                }
+            });
+            
+            // ESC key to close references modal
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && referencesModal.classList.contains('active')) {
+                    referencesModal.classList.remove('active');
+                }
+            });
+        }
     }
     
     switchTab(tabName) {
