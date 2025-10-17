@@ -26,6 +26,7 @@
                 <nav class="header-nav">
                     <a href="./index.html" class="nav-link">Map</a>
                     <a href="./submissions.html" class="nav-link active">Submissions</a>
+                    <a href="./admin-login.html" id="admin-link" class="nav-link" style="display: none;">Admin</a>
                 </nav>
                 <div class="header-title">
                     <h1>Community Submissions</h1>
@@ -142,6 +143,7 @@
                         </thead>
                         <tbody id="submissions-tbody">
                             <!-- Will be populated by JavaScript -->
+                            <!-- Admin actions (approve/reject buttons) will be added in the next phase -->
                         </tbody>
                     </table>
                     
@@ -300,6 +302,22 @@
     <!-- JavaScript -->
     <!-- Supabase Configuration -->
     <script src="./config.js"></script>
+    <script src="./auth.js"></script>
     <script src="./submissions.js"></script>
+    
+    <!-- Auth State Handler -->
+    <script>
+    // Show admin link if user is admin
+    if (window.authManager) {
+      window.authManager.onAuthChange((session) => {
+        const adminLink = document.getElementById('admin-link');
+        if (adminLink && window.authManager.isAdmin()) {
+          adminLink.style.display = 'inline-block';
+        } else if (adminLink) {
+          adminLink.style.display = 'none';
+        }
+      });
+    }
+    </script>
 </body>
 </html>

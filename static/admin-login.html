@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>Admin Login - Greek Floods Web Map</title>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <nav class="header-nav">
+                    <a href="./index.html" class="nav-link">Home</a>
+                    <a href="./submissions.html" class="nav-link">Submissions</a>
+                </nav>
+                <div class="header-title">
+                    <h1>Admin Login</h1>
+                    <p class="subtitle">Access administrative features</p>
+                </div>
+                <div class="header-actions">
+                    <!-- Empty placeholder for balance -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Centered Login Container -->
+            <div class="login-container">
+                <div class="login-card">
+                    <h2 class="login-header">Sign In as Admin</h2>
+                    <form id="admin-login-form" class="login-form">
+                        <div class="form-group">
+                            <label for="admin-email" class="form-label">Email</label>
+                            <input type="email" id="admin-email" class="login-input" required autocomplete="email" placeholder="admin@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-password" class="form-label">Password</label>
+                            <div class="password-input-container">
+                                <input type="password" id="admin-password" class="login-input" required autocomplete="current-password" placeholder="Enter password">
+                                <button type="button" id="password-toggle" class="password-toggle" aria-label="Toggle password visibility">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="login-error" class="login-error hidden"></div>
+                        <button type="submit" id="login-submit" class="login-button">
+                            <span class="button-text">Sign In as Admin</span>
+                            <div class="spinner-small hidden" id="login-spinner"></div>
+                        </button>
+                        <div class="login-footer">
+                            <a href="#" id="forgot-password" class="forgot-password-link">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <span>© 2026 <a href="https://github.com/AlexandrosLiaskos/" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Alexandros Liaskos</a></span>
+                <span class="footer-divider">|</span>
+                <button id="references-btn" class="references-btn">References</button>
+                <span class="footer-divider">|</span>
+                <a href="https://github.com/AlexandrosLiaskos/GeoDBs" target="_blank" rel="noopener" class="github-link" title="View on GitHub" style="color: inherit; text-decoration: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                </a>
+            </div>
+        </footer>
+
+        <!-- References Modal -->
+        <div id="references-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>References</h3>
+                    <button class="modal-close" id="close-references">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="reference-item">
+                        <strong>Citation for this WebGIS:</strong>
+                        <p>Liaskos, A. (2026). <em>Greek Floods WebGIS: Interactive Mapping and Analysis System</em>. National and Kapodistrian University of Athens, Department of Geology and Geoenvironment. Available at: <a href="https://github.com/AlexandrosLiaskos/GeoDBs" target="_blank" rel="noopener">https://github.com/AlexandrosLiaskos/GeoDBs</a></p>
+                    </div>
+                    <div class="reference-item">
+                        <strong>Data Source:</strong>
+                        <p>Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase JavaScript Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Supabase Configuration -->
+    <script src="./config.js"></script>
+    <!-- Authentication Module -->
+    <script src="./auth.js"></script>
+    
+    <!-- Inline Script for Form Handling -->
+    <script>
+        // CSRF protection: Ensure forms are submitted from the same origin (handled by browser for POST requests)
+        // Additional CSRF tokens can be added if needed for future enhancements
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('admin-login-form');
+            const emailInput = document.getElementById('admin-email');
+            const passwordInput = document.getElementById('admin-password');
+            const passwordToggle = document.getElementById('password-toggle');
+            const submitButton = document.getElementById('login-submit');
+            const buttonText = document.querySelector('.button-text');
+            const spinner = document.getElementById('login-spinner');
+            const errorDiv = document.getElementById('login-error');
+            const forgotPasswordLink = document.getElementById('forgot-password');
+
+            // Auto-focus email input
+            emailInput.focus();
+
+            // Password toggle functionality
+            passwordToggle.addEventListener('click', function() {
+                const type = passwordInput.type === 'password' ? 'text' : 'password';
+                passwordInput.type = type;
+                // Update icon (simple toggle, can be enhanced)
+                const icon = passwordToggle.querySelector('svg');
+                if (type === 'text') {
+                    icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+                } else {
+                    icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+                }
+            });
+
+            // Forgot password placeholder
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                alert('Password reset functionality will be implemented in the future.');
+            });
+
+            // Form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                // Client-side validation
+                const email = emailInput.value.trim();
+                const password = passwordInput.value.trim();
+                
+                if (!email || !password) {
+                    showError('Please fill in all fields.');
+                    return;
+                }
+                
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    showError('Please enter a valid email address.');
+                    return;
+                }
+                
+                // Show loading state
+                setLoading(true);
+                hideError();
+                
+                try {
+                    // Use auth manager to sign in
+                    const result = await window.authManager.signIn(email, password);
+                    
+                    if (result.success) {
+                        // Check if admin
+                        if (window.authManager.isAdmin()) {
+                            // Redirect to admin dashboard or intended destination
+                            const intendedDestination = sessionStorage.getItem('intendedDestination') || './admin.html';
+                            window.location.href = intendedDestination;
+                        } else {
+                            showError('You do not have admin privileges.');
+                        }
+                    } else {
+                        showError(result.error || 'Login failed. Please try again.');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showError('An unexpected error occurred. Please try again.');
+                } finally {
+                    setLoading(false);
+                }
+            });
+
+            // Handle Enter key
+            form.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            // Check if already logged in as admin on page load
+            if (window.authManager && window.authManager.isAdmin()) {
+                const intendedDestination = sessionStorage.getItem('intendedDestination') || './admin.html';
+                window.location.href = intendedDestination;
+            }
+
+            function setLoading(loading) {
+                submitButton.disabled = loading;
+                buttonText.style.display = loading ? 'none' : 'inline';
+                spinner.classList.toggle('hidden', !loading);
+            }
+
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.classList.remove('hidden');
+            }
+
+            function hideError() {
+                errorDiv.classList.add('hidden');
+            }
+        });
+
+        // References modal handling (copied from index.html)
+        document.getElementById('references-btn').addEventListener('click', function() {
+            document.getElementById('references-modal').style.display = 'flex';
+        });
+
+        document.getElementById('close-references').addEventListener('click', function() {
+            document.getElementById('references-modal').style.display = 'none';
+        });
+    </script>
+</body>
+</html>

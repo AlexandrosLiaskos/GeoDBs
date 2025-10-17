@@ -235,14 +235,15 @@ Row Level Security policies have been implemented to secure database access and 
 The RLS policies implement the following security model:
 
 - **Floods table**: Public read access for all users, administrative write access only (via service role key)
-- **Submissions table**: Public read and insert access with rate limiting enforced at database level; updates and deletes restricted to service role
-- **Submission_rate_limits table**: Public read/write for rate limit tracking, delete operations restricted to service role
+- **Submissions table**: Public read and insert access with rate limiting enforced at database level; updates and deletes restricted to authenticated admin users
+- **Submission_rate_limits table**: Public read/write for rate limit tracking, delete operations restricted to admin users
 
 This model ensures that:
 - Anyone can view flood data and submissions (public read access)
 - Anyone can submit contributions, but only up to the defined rate limits
-- Only administrators (using service role key) can modify submission status or delete records
+- Only administrators (authenticated with admin role) can modify submission status or delete records
 - Rate limiting is enforced at the database level, preventing circumvention
+- Admin authentication is required for privileged operations
 
 ### Rate Limiting Enforcement
 
@@ -300,11 +301,16 @@ To verify that the policies are working correctly:
 
 ### Administrative Operations
 
-Administrative operations require the service role key, which bypasses all RLS policies:
+Administrative operations require admin authentication and role-based access control:
+
+- **Admin authentication**:
+  - Admin users authenticate via `/admin-login.html` using Supabase Auth
+  - Admin role is checked via user metadata (`is_admin: true`)
+  - Sessions are managed client-side with automatic token refresh
 
 - **Service role key usage**:
-  - The service role key has full database access
-  - Use it for updating submission status, deleting records, and resetting rate limits
+  - The service role key still provides full database access for backend operations
+  - Use it for bulk operations, data migrations, and emergency access
   - **NEVER expose the service role key in frontend code**
   - Store it securely in backend environment variables only
 
@@ -315,10 +321,10 @@ Administrative operations require the service role key, which bypasses all RLS p
   - Block user: `INSERT INTO submission_rate_limits (identifier, identifier_type, blocked_until) VALUES (?, 'email', ?)`
 
 - **Admin panel considerations**:
-  - Build a separate admin panel that uses the service role key on the backend
-  - Implement proper authentication for admin users
-  - Create tools for moderating submissions, managing rate limits, and viewing statistics
-  - Consider using Supabase Auth with role-based access control
+  - Admin interface accessible via authenticated admin login
+  - Tools for moderating submissions, managing rate limits, and viewing statistics
+  - Role-based UI components that show/hide based on admin status
+  - Future admin dashboard for comprehensive management
 
 ### Troubleshooting
 
@@ -331,8 +337,8 @@ Common issues and solutions:
 
 2. **"permission denied for table" error**:
    - **Cause**: Attempting an operation not allowed by RLS policies (e.g., UPDATE or DELETE as anonymous user)
-   - **Solution**: These operations require service role key authentication
-   - **Note**: This is expected behavior for non-admin users
+   - **Solution**: These operations require admin authentication
+   - **Note**: Log in as admin at `/admin-login.html` to perform these operations
 
 3. **Rate limit not working**:
    - **Verify**: Check that RLS policies are enabled on all tables
@@ -341,11 +347,26 @@ Common issues and solutions:
    - **Check**: Ensure submission_date values are being set correctly
 
 4. **Can't update submission status**:
-   - **Expected**: Updates require service role key (not available in frontend)
-   - **Solution**: Build backend admin tools or use Supabase Dashboard for manual updates
-   - **Note**: The [`submissions_admin_update`](db/migrations/supabase_rls_policies.sql:98) policy is for service role only
+   - **Expected**: Updates require admin authentication
+   - **Solution**: Log in as admin and access admin pages
+   - **Note**: The [`submissions_admin_update`](db/migrations/supabase_rls_policies.sql:98) policy requires admin role
 
-5. **Performance issues**:
+5. **Cannot log in as admin**:
+   - **Cause**: User metadata not set correctly or invalid credentials
+   - **Solution**: Check user metadata in Supabase Dashboard and verify `is_admin: true`
+   - **Note**: Ensure the user exists and has confirmed their email
+
+6. **Admin actions not working**:
+   - **Cause**: RLS policies not updated or admin role not recognized
+   - **Solution**: Verify RLS policies are applied and user has admin metadata
+   - **Note**: Check browser console for authentication errors
+
+7. **Session expired**:
+   - **Cause**: Token refresh failed or session timed out
+   - **Solution**: Log in again at `/admin-login.html`
+   - **Note**: Sessions persist automatically but may expire after inactivity
+
+8. **Performance issues**:
    - **Monitor**: The INSERT policy uses subqueries which may impact performance
    - **Optimize**: Consider adding index: `CREATE INDEX idx_submissions_email_date ON submissions(contributor_email, submission_date)`
    - **Check**: Review query performance in Supabase Dashboard > Database > Query Performance
@@ -593,8 +614,53 @@ The deployment configuration consists of:
 - ✅ Row Level Security policies protect the database
 - ✅ Credentials stored as repository secrets (encrypted)
 - ✅ No service role key exposed anywhere
+- ✅ Admin authentication works with GitHub Pages deployment
 - ⚠️ The anon key will be visible in the deployed JavaScript (this is expected and safe)
 - ⚠️ RLS policies are critical - ensure they're properly configured
+- ⚠️ Admin users must be created in Supabase Dashboard before deployment
+
+## 🔐 Admin Authentication Setup
+
+### Overview
+The application now includes admin authentication using Supabase Auth with email/password authentication. This enables role-based access control where designated admin users can update and delete submissions through protected admin pages. Authentication is handled client-side with session persistence, and admin roles are enforced at the database level through updated Row Level Security policies.
+
+### Creating Admin Users
+
+#### Method 1: Supabase Dashboard
+1. Navigate to **Authentication > Users** in your Supabase Dashboard
+2. Click **Add User** or select an existing user
+3. Set user metadata: `{"is_admin": true}`
+4. Save changes
+
+#### Method 2: SQL Command
+Execute this SQL command in the Supabase SQL Editor:
+```sql
+UPDATE auth.users 
+SET raw_user_meta_data = raw_user_meta_data || '{"is_admin": true}'::jsonb 
+WHERE email = 'admin@example.com';
+```
+
+#### Method 3: Sign Up Script
+For initial setup, you can create an admin user programmatically using the Supabase JavaScript client. Include password requirements (minimum 6 characters, mixed case recommended).
+
+### Logging In as Admin
+- Access the admin login page at `/admin-login.html`
+- Enter your admin email and password
+- Upon successful authentication, you'll be redirected to the admin dashboard
+- Sessions persist across page loads with automatic token refresh
+- Admin users will see an "Admin" link in the navigation
+
+### Managing Admin Roles
+- Add/remove admin privileges by updating user metadata in Supabase Dashboard
+- Changes take effect on the next login (token refresh)
+- For production, consider using Custom Access Token Hook for server-side role management (see [Supabase Auth Hooks documentation](https://supabase.com/docs/guides/auth/auth-hooks))
+
+### Security Considerations
+- Admin roles are stored in user metadata (readable by the client)
+- Row Level Security policies provide the actual database-level enforcement
+- For enhanced security, consider using `app_metadata` or Custom Access Token Hook
+- Password requirements: minimum 6 characters, follow general best practices
+- The service role key is still required for certain administrative operations
 
 ## 🌐 Alternative Deployment Options
 

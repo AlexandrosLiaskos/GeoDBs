@@ -38,6 +38,7 @@
                 <nav class="header-nav">
                     <a href="./index.html" class="nav-link active">Home</a>
                     <a href="./submissions.html" class="nav-link">Submissions</a>
+                    <a href="./admin-login.html" id="admin-link" class="nav-link" style="display: none;">Admin</a>
                 </nav>
                 <div class="header-title">
                     <h1>Greek Floods Web Map</h1>
@@ -215,11 +216,28 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Supabase Configuration -->
     <script src="./config.js"></script>
+    <!-- Authentication Module -->
+    <script src="./auth.js"></script>
     
     <!-- Dropdown Limit Script -->
     <script src="./simple-dropdown-limit.js"></script>
     
     <!-- Custom JavaScript -->
     <script src="./app.js"></script>
+
+    <!-- Auth State Handler -->
+    <script>
+    // Show admin link if user is admin
+    if (window.authManager) {
+      window.authManager.onAuthChange((session) => {
+        const adminLink = document.getElementById('admin-link');
+        if (adminLink && window.authManager.isAdmin()) {
+          adminLink.style.display = 'inline-block';
+        } else if (adminLink) {
+          adminLink.style.display = 'none';
+        }
+      });
+    }
+    </script>
 </body>
 </html>

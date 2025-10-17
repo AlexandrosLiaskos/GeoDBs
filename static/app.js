@@ -223,35 +223,39 @@ class FloodMapApp {
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
+            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Process in JS for efficiency with ~2000 records.
+            
             // Years query
             console.log('Querying years...');
-            let yearsQuery = window.supabaseClient.from('floods').select('year, count()').not('year', 'is', null).not('year', 'eq', '').order('year', { ascending: false });
+            let yearsQuery = window.supabaseClient.from('floods').select('year').limit(5000);
             if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.cause) yearsQuery = yearsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: yearsData, error: yearsError } = await yearsQuery;
             if (yearsError) throw yearsError;
-            const years = yearsData.map(row => row.year);
-            console.log(`Found ${years.length} years`);
+            const years = this._getUniqueValuesWithCount(yearsData, 'year');
+            years.sort((a, b) => b.localeCompare(a));
+            console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
             // Locations query
             console.log('Querying locations...');
-            let locationsQuery = window.supabaseClient.from('floods').select('location_name, count()').not('location_name', 'is', null).not('location_name', 'eq', '').order('count', { ascending: false }).limit(100);
+            let locationsQuery = window.supabaseClient.from('floods').select('location_name').limit(5000);
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
             if (selectedFilters.cause) locationsQuery = locationsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: locationsData, error: locationsError } = await locationsQuery;
             if (locationsError) throw locationsError;
-            const locations = locationsData.map(row => row.location_name);
-            console.log(`Found ${locations.length} locations`);
+            const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
+            locations.splice(100);
+            console.log(`Processing ${locationsData.length} location values, found ${locations.length} unique locations (showing top 100)`);
             
             // Causes query
             console.log('Querying causes...');
-            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood, count()').not('cause_of_flood', 'is', null).not('cause_of_flood', 'eq', '').order('count', { ascending: false });
+            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood').limit(5000);
             if (selectedFilters.year) causesQuery = causesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) causesQuery = causesQuery.eq('location_name', selectedFilters.location);
             const { data: causesData, error: causesError } = await causesQuery;
             if (causesError) throw causesError;
-            const causes = causesData.map(row => row.cause_of_flood);
-            console.log(`Found ${causes.length} causes`);
+            const causes = this._getUniqueValuesWithCount(causesData, 'cause_of_flood');
+            console.log(`Processing ${causesData.length} cause values, found ${causes.length} unique causes`);
             
             this.filterOptions = { years, locations, causes };
             
@@ -278,6 +282,28 @@ class FloodMapApp {
             this.showFilterError('Unable to load filter options. Please check your connection.');
             this.addFilterErrorState();
         }
+    }
+    
+    _getUniqueValuesWithCount(data, fieldName) {
+        // Filter out null, undefined, empty string, and whitespace-only values
+        const filtered = data.filter(item => {
+            const value = item[fieldName];
+            return value != null && typeof value === 'string' && value.trim() !== '';
+        });
+        // Trim all string values
+        const trimmed = filtered.map(item => ({ ...item, [fieldName]: item[fieldName].trim() }));
+        // Create frequency map using reduce
+        const freqMap = trimmed.reduce((acc, item) => {
+            const value = item[fieldName];
+            acc[value] = (acc[value] || 0) + 1;
+            return acc;
+        }, {});
+        // Convert to array of {value, count} objects
+        const freqArray = Object.entries(freqMap).map(([value, count]) => ({ value, count }));
+        // Sort by count descending
+        freqArray.sort((a, b) => b.count - a.count);
+        // Return array of just the values
+        return freqArray.map(item => item.value);
     }
     
     populateFilterDropdowns(selectedFilters = {}) {
