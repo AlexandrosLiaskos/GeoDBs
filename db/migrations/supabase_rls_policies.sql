@@ -9,6 +9,13 @@
 -- - Service role key bypasses all RLS policies for administrative operations
 -- - Rate limiting enforced through database policies for defense-in-depth
 --
+-- ADMIN AUTHENTICATION:
+-- - Admin users are identified by 'is_admin' flag in user_metadata
+-- - Alternatively, 'role' = 'admin' in app_metadata
+-- - RLS policies check these flags to enforce admin-only operations
+-- - To create an admin user, update user metadata in Supabase Dashboard:
+--   UPDATE auth.users SET raw_user_meta_data = raw_user_meta_data || '{"is_admin": true}'::jsonb WHERE email = 'admin@example.com';
+--
 -- TABLES:
 -- 1. floods: Public read access, admin-only writes
 -- 2. submissions: Public read/insert with rate limiting, admin-only updates/deletes
@@ -42,6 +49,22 @@ ALTER TABLE submissions ENABLE ROW LEVEL SECURITY;
 -- Enable RLS on submission_rate_limits table
 -- Security model: Public read/write for rate limit tracking, admin-only deletes
 ALTER TABLE submission_rate_limits ENABLE ROW LEVEL SECURITY;
+
+-- Helper function to check if current user is admin
+-- Checks both user_metadata and app_metadata for admin role
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN COALESCE(
+    (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean,
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin',
+    false
+  );
+END;
+$$;
 
 -- ============================================================================
 -- 2. FLOODS TABLE POLICIES (Public Read Access)
@@ -102,24 +125,34 @@ CREATE POLICY submissions_public_insert
     )
   );
 
--- Policy: Allow authenticated users to update submissions
--- Note: Since the application doesn't have user authentication, only requests
--- using the service role key will be able to update. This policy serves as
--- documentation of intent and will be useful if authentication is added later.
+-- Policy: Allow admin users to update submissions
+-- Checks for admin role in user metadata or app metadata
+DROP POLICY IF EXISTS submissions_admin_update ON submissions;
 CREATE POLICY submissions_admin_update
   ON submissions
   FOR UPDATE
   TO authenticated
-  USING (true)
+  USING (
+    COALESCE(
+      (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean,
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+    )
+  )
   WITH CHECK (true);
 
--- Policy: Allow authenticated users to delete submissions
--- Note: Same as above - only service role key can delete in practice.
+-- Policy: Allow admin users to delete submissions
+-- Checks for admin role in user metadata or app_metadata
+DROP POLICY IF EXISTS submissions_admin_delete ON submissions;
 CREATE POLICY submissions_admin_delete
   ON submissions
   FOR DELETE
   TO authenticated
-  USING (true);
+  USING (
+    COALESCE(
+      (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean,
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+    )
+  );
 
 -- ============================================================================
 -- 4. SUBMISSION_RATE_LIMITS TABLE POLICIES
@@ -157,13 +190,18 @@ CREATE POLICY rate_limits_public_update
   USING (true)
   WITH CHECK (true);
 
--- Policy: Allow authenticated users to delete rate limit records
--- Only service role can delete in practice (for cleanup/reset operations)
+-- Policy: Allow admin users to delete rate limit records
+DROP POLICY IF EXISTS rate_limits_admin_delete ON submission_rate_limits;
 CREATE POLICY rate_limits_admin_delete
   ON submission_rate_limits
   FOR DELETE
   TO authenticated
-  USING (true);
+  USING (
+    COALESCE(
+      (auth.jwt() -> 'user_metadata' ->> 'is_admin')::boolean,
+      (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+    )
+  );
 
 -- ============================================================================
 -- VERIFICATION AND TESTING QUERIES
@@ -240,6 +278,33 @@ CREATE POLICY rate_limits_admin_delete
 --    - Consider implementing on backend with trusted IP detection service
 --    - Or use Supabase Edge Functions with access to real client IP
 -- 
+-- ============================================================================
+-- ADMIN USER SETUP
+-- ============================================================================
+--
+-- To create an admin user, run one of the following:
+--
+-- Method 1: Using Supabase Dashboard
+-- 1. Go to Authentication > Users
+-- 2. Select the user or create a new user
+-- 3. In User Metadata, add: {"is_admin": true}
+-- 4. Save changes
+--
+-- Method 2: Using SQL (requires service role access)
+-- UPDATE auth.users
+-- SET raw_user_meta_data = raw_user_meta_data || '{"is_admin": true}'::jsonb
+-- WHERE email = 'admin@example.com';
+--
+-- Method 3: Using Supabase Client (for initial setup)
+-- const { data, error } = await supabase.auth.admin.updateUserById(
+--   userId,
+--   { user_metadata: { is_admin: true } }
+-- );
+--
+-- IMPORTANT: For production, consider using Custom Access Token Hook
+-- to add admin claims to JWT tokens for better security.
+-- See: https://supabase.com/docs/guides/auth/auth-hooks
+--
 -- ============================================================================
 
 -- End of migration
