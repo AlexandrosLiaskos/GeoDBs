@@ -8,7 +8,7 @@
     const config = {
         defaultSize: 6,
         debounceDelay: 150,
-        excludeSelectors: [], // Selectors to exclude from limiting
+        excludeSelectors: ['#year-filter', '#location-filter', '#cause-filter'], // Selectors to exclude from limiting
     };
     
     // Cache for processed selects to avoid redundant operations
@@ -64,9 +64,8 @@
                     const customSize = select.dataset.dropdownLimit;
                     const sizeLimit = customSize ? parseInt(customSize, 10) : config.defaultSize;
                     
-                    // Only modify selects with more than sizeLimit options OR filter dropdowns
-                    const shouldLimit = select.options.length > sizeLimit || 
-                                       select.id.includes('filter');
+                    // Only modify selects with more than sizeLimit options
+                    const shouldLimit = select.options.length > sizeLimit;
                     
                     if (shouldLimit) {
                         // Check if already properly limited
