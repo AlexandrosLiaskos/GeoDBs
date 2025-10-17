@@ -23,6 +23,15 @@
 </head>
 <body>
     <div id="app">
+        <!-- Error Banner -->
+        <div id="error-banner" class="error-banner hidden">
+            <div class="error-banner-content">
+                <div class="error-banner-icon">⚠️</div>
+                <div class="error-banner-message" id="error-banner-message"></div>
+                <button class="error-banner-close" id="error-banner-close" aria-label="Close error banner">×</button>
+            </div>
+        </div>
+        
         <!-- Header -->
         <header class="header">
             <div class="header-content">
@@ -66,32 +75,44 @@
                     
                     <!-- Filters Tab Content -->
                     <div class="tab-content active" id="filters-tab">
-                        <!-- Year Filter -->
-                        <div class="filter-group">
-                        <label for="year-filter">Year:</label>
-                        <select id="year-filter">
-                            <option value="">All Years</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Location Filter -->
-                    <div class="filter-group">
-                        <label for="location-filter">Location:</label>
-                        <select id="location-filter">
-                            <option value="">All Locations</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Cause Filter -->
-                    <div class="filter-group">
-                        <label for="cause-filter">Cause:</label>
-                        <select id="cause-filter">
-                            <option value="">All Causes</option>
-                        </select>
-                    </div>
-                    
-                        <!-- Clear Filters Button -->
-                        <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All Filters</button>
+                        <!-- Filter Loading Indicator -->
+                        <div id="filter-loading" class="filter-loading hidden">
+                            <div class="spinner-small"></div>
+                            <span>Loading filters...</span>
+                        </div>
+                        
+                        <!-- Filter Controls Container -->
+                        <div id="filter-controls">
+                            <!-- Year Filter -->
+                            <div class="filter-group">
+                                <label for="year-filter">Year:</label>
+                                <select id="year-filter">
+                                    <option value="">All Years</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Location Filter -->
+                            <div class="filter-group">
+                                <label for="location-filter">Location:</label>
+                                <select id="location-filter">
+                                    <option value="">All Locations</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Cause Filter -->
+                            <div class="filter-group">
+                                <label for="cause-filter">Cause:</label>
+                                <select id="cause-filter">
+                                    <option value="">All Causes</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Clear Filters Button -->
+                            <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All Filters</button>
+                        </div>
+                        
+                        <!-- Filter Error Message -->
+                        <div id="filter-error" class="filter-error hidden"></div>
                     </div>
                     
                     <!-- Statistics Tab Content -->
@@ -194,6 +215,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Supabase Configuration -->
     <script src="./config.js"></script>
+    
+    <!-- Dropdown Limit Script -->
+    <script src="./simple-dropdown-limit.js"></script>
     
     <!-- Custom JavaScript -->
     <script src="./app.js"></script>

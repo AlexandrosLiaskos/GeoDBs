@@ -25,6 +25,7 @@ class FloodMapApp {
         this.cacheModalElements();
         this.initMap();
         this.initEventListeners();
+        await this.checkDatabaseConnection();
         await this.loadFilterOptions();
         await this.loadStats();
         await this.loadFloodData();
@@ -205,50 +206,94 @@ class FloodMapApp {
     }
     
     async loadFilterOptions(selectedFilters = {}) {
+        console.log('Loading filter options with filters:', selectedFilters);
+        
+        // Check if Supabase client exists
+        if (!window.supabaseClient) {
+            console.error('❌ Database connection not initialized. Please check Supabase configuration.');
+            this.showError('Database connection not initialized. Please check Supabase configuration.');
+            this.showFilterError('Unable to load filter options. Database connection not configured.');
+            this.disableFilterDropdowns();
+            return;
+        }
+        
         try {
             // Show loading state on filter dropdowns
             const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
             selects.forEach(s => s.style.opacity = '0.6');
+            this.showFilterLoading(true);
             
             // Years query
+            console.log('Querying years...');
             let yearsQuery = window.supabaseClient.from('floods').select('year, count()').not('year', 'is', null).not('year', 'eq', '').order('year', { ascending: false });
             if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.cause) yearsQuery = yearsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: yearsData, error: yearsError } = await yearsQuery;
             if (yearsError) throw yearsError;
             const years = yearsData.map(row => row.year);
+            console.log(`Found ${years.length} years`);
             
             // Locations query
+            console.log('Querying locations...');
             let locationsQuery = window.supabaseClient.from('floods').select('location_name, count()').not('location_name', 'is', null).not('location_name', 'eq', '').order('count', { ascending: false }).limit(100);
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
             if (selectedFilters.cause) locationsQuery = locationsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: locationsData, error: locationsError } = await locationsQuery;
             if (locationsError) throw locationsError;
             const locations = locationsData.map(row => row.location_name);
+            console.log(`Found ${locations.length} locations`);
             
             // Causes query
+            console.log('Querying causes...');
             let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood, count()').not('cause_of_flood', 'is', null).not('cause_of_flood', 'eq', '').order('count', { ascending: false });
             if (selectedFilters.year) causesQuery = causesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) causesQuery = causesQuery.eq('location_name', selectedFilters.location);
             const { data: causesData, error: causesError } = await causesQuery;
             if (causesError) throw causesError;
             const causes = causesData.map(row => row.cause_of_flood);
+            console.log(`Found ${causes.length} causes`);
             
             this.filterOptions = { years, locations, causes };
             
             this.populateFilterDropdowns(selectedFilters);
             
-            // Restore opacity
+            // Restore opacity and hide loading
             selects.forEach(s => s.style.opacity = '1');
+            this.showFilterLoading(false);
+            this.hideFilterError();
+            
         } catch (error) {
-            console.error('Error loading filter options:', error);
-            // Restore opacity on error
+            console.error('❌ Error loading filter options:', error);
+            console.error('Error message:', error.message);
+            console.error('Error details:', error.details || 'No additional details');
+            console.error('Current filter state:', selectedFilters);
+            
+            // Restore opacity and hide loading on error
             const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
             selects.forEach(s => s.style.opacity = '1');
+            this.showFilterLoading(false);
+            
+            // Show user-visible error
+            this.showError('Failed to load filter options. Please check your database connection and try again.');
+            this.showFilterError('Unable to load filter options. Please check your connection.');
+            this.addFilterErrorState();
         }
     }
     
     populateFilterDropdowns(selectedFilters = {}) {
+        console.log('Populating dropdowns with:', this.filterOptions);
+        
+        // Validate filter options
+        if (!this.filterOptions.years || this.filterOptions.years.length === 0) {
+            console.warn('⚠️ No years available - check database connection');
+        }
+        if (!this.filterOptions.locations || this.filterOptions.locations.length === 0) {
+            console.warn('⚠️ No locations available - check database connection');
+        }
+        if (!this.filterOptions.causes || this.filterOptions.causes.length === 0) {
+            console.warn('⚠️ No causes available - check database connection');
+        }
+        
         // Store current selections
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
@@ -268,6 +313,7 @@ class FloodMapApp {
             if (year === currentYear) option.selected = true;
             yearSelect.appendChild(option);
         });
+        console.log(`Added ${this.filterOptions.years.length} year options`);
         
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
@@ -279,6 +325,7 @@ class FloodMapApp {
             if (location === currentLocation) option.selected = true;
             locationSelect.appendChild(option);
         });
+        console.log(`Added ${this.filterOptions.locations.length} location options`);
         
         // Clear and repopulate cause filter
         const causeOptions = causeSelect.querySelectorAll('option:not(:first-child)');
@@ -290,9 +337,11 @@ class FloodMapApp {
             if (cause === currentCause) option.selected = true;
             causeSelect.appendChild(option);
         });
+        console.log(`Added ${this.filterOptions.causes.length} cause options`);
         
         // Re-apply the dropdown limiting after repopulating
         if (typeof limitDropdowns === 'function') {
+            console.log('Calling limitDropdowns()...');
             setTimeout(limitDropdowns, 100);
         }
     }
@@ -340,6 +389,8 @@ class FloodMapApp {
         this.isLoading = true;
         
         try {
+            console.log('Loading flood data with filters:', filters);
+            
             // Build query
             let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name').not('latitude', 'is', null).not('longitude', 'is', null);
             
@@ -349,15 +400,22 @@ class FloodMapApp {
             
             query = query.limit(2000);
             
+            console.log('Executing flood data query...');
             const { data, error } = await query;
-            if (error) throw error;
+            if (error) {
+                console.error('Query failed:', error);
+                throw error;
+            }
             
+            console.log(`Successfully loaded ${data.length} flood records`);
             this.currentData = data;
             this.updateMap();
             this.updateVisiblePointsCount();
             
         } catch (error) {
-            console.error('Error loading flood data:', error);
+            console.error('❌ Error loading flood data:', error);
+            console.error('Error message:', error.message);
+            console.error('Query filters:', filters);
             this.showError('Failed to load flood data. Please try again.');
         } finally {
             this.showLoading(false);
@@ -593,6 +651,85 @@ class FloodMapApp {
         }
     }
     
+    
+    async checkDatabaseConnection() {
+        console.log('🔍 Checking database connection...');
+        
+        if (!window.supabaseClient) {
+            console.error('❌ Supabase client not initialized');
+            this.showError('Database connection not initialized. Please configure Supabase credentials.');
+            this.showFilterError('Database not configured. Filters unavailable.');
+            this.disableFilterDropdowns();
+            return false;
+        }
+        
+        try {
+            // Perform a simple test query
+            const { count, error } = await window.supabaseClient
+                .from('floods')
+                .select('*', { count: 'exact', head: true });
+            
+            if (error) {
+                console.error('❌ Database connection test failed:', error);
+                this.showError('Failed to connect to database. Please check your Supabase configuration.');
+                this.showFilterError('Unable to connect to database.');
+                this.disableFilterDropdowns();
+                return false;
+            }
+            
+            console.log('✅ Database connection successful');
+            console.log(`📊 Database contains ${count} flood records`);
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Database connection exception:', error);
+            this.showError('An error occurred while connecting to the database.');
+            this.showFilterError('Database connection error.');
+            this.disableFilterDropdowns();
+            return false;
+        }
+    }
+    
+    showFilterLoading(show) {
+        const filterLoading = document.getElementById('filter-loading');
+        if (filterLoading) {
+            if (show) {
+                filterLoading.classList.remove('hidden');
+            } else {
+                filterLoading.classList.add('hidden');
+            }
+        }
+    }
+    
+    showFilterError(message) {
+        const filterError = document.getElementById('filter-error');
+        if (filterError) {
+            filterError.textContent = message;
+            filterError.classList.remove('hidden');
+        }
+    }
+    
+    hideFilterError() {
+        const filterError = document.getElementById('filter-error');
+        if (filterError) {
+            filterError.classList.add('hidden');
+        }
+    }
+    
+    addFilterErrorState() {
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+        selects.forEach(select => {
+            select.classList.add('filter-error-state');
+        });
+    }
+    
+    disableFilterDropdowns() {
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+        selects.forEach(select => {
+            select.disabled = true;
+            select.classList.add('filter-error-state');
+        });
+    }
     async clearFilters() {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
@@ -620,9 +757,41 @@ class FloodMapApp {
     }
     
     showError(message) {
-        // Simple error display - could be enhanced with a proper notification system
         console.error('Error:', message);
-        alert(message);
+        
+        // Create or get error banner
+        let errorBanner = document.getElementById('error-banner');
+        if (!errorBanner) {
+            errorBanner = document.createElement('div');
+            errorBanner.id = 'error-banner';
+            errorBanner.className = 'error-banner';
+            document.body.insertBefore(errorBanner, document.body.firstChild);
+        }
+        
+        // Build error banner HTML
+        const errorHTML = `
+            <div class="error-banner-content">
+                <div class="error-banner-icon">⚠️</div>
+                <div class="error-banner-message">${message}</div>
+                <button class="error-banner-close" aria-label="Close error banner">×</button>
+            </div>
+        `;
+        
+        errorBanner.innerHTML = errorHTML;
+        errorBanner.classList.remove('hidden');
+        
+        // Add close button functionality
+        const closeButton = errorBanner.querySelector('.error-banner-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                errorBanner.classList.add('hidden');
+            });
+        }
+        
+        // Auto-dismiss after 10 seconds
+        setTimeout(() => {
+            errorBanner.classList.add('hidden');
+        }, 10000);
     }
     
     // Debounced filter application for better performance
