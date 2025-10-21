@@ -223,15 +223,27 @@ class FloodMapApp {
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
-            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Process in JS for efficiency with ~2000 records.
+            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Note: Supabase has a default 1000-row limit that may truncate results. Process in JS for efficiency with ~2000 records.
             
-            // Years query
-            console.log('Querying years...');
-            let yearsQuery = window.supabaseClient.from('floods').select('year').limit(10000);
-            if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
-            if (selectedFilters.cause) yearsQuery = yearsQuery.eq('cause_of_flood', selectedFilters.cause);
-            const { data: yearsData, error: yearsError } = await yearsQuery;
-            if (yearsError) throw yearsError;
+            // Years query with pagination to fetch all records despite Supabase's 1000-row limit
+            // Supabase/PostgREST default max-rows limit is 1000. This can be increased in Supabase project settings under API > Settings > Max Rows.
+            // Alternative solutions include pagination, RPC functions, or database views. Current implementation uses pagination to handle this limitation.
+            console.log('Querying years with pagination...');
+            let allYearsData = [];
+            let start = 0;
+            const batchSize = 1000;
+            while (true) {
+                let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
+                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
+                const { data: batchData, error } = await query;
+                if (error) throw error;
+                allYearsData.push(...batchData);
+                if (batchData.length < batchSize) break;
+                start += batchSize;
+            }
+            const yearsData = allYearsData;
+            if (yearsData.length >= 1000) console.warn('⚠️ Fetched 1000 or more records - Supabase row limit may be truncating results. Total DB records: 1992');
             console.log('📊 Raw yearsData sample (first 10):', yearsData.slice(0, 10));
             console.log('🔍 Type of first year value:', typeof yearsData[0]?.year, '| Value:', yearsData[0]?.year);
             console.log('📈 Total year records fetched:', yearsData.length);
@@ -242,7 +254,7 @@ class FloodMapApp {
             
             // Locations query
             console.log('Querying locations...');
-            let locationsQuery = window.supabaseClient.from('floods').select('location_name').limit(10000);
+            let locationsQuery = window.supabaseClient.from('floods').select('location_name');
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
             if (selectedFilters.cause) locationsQuery = locationsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: locationsData, error: locationsError } = await locationsQuery;
@@ -253,7 +265,7 @@ class FloodMapApp {
             
             // Causes query
             console.log('Querying causes...');
-            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood').limit(10000);
+            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood');
             if (selectedFilters.year) causesQuery = causesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) causesQuery = causesQuery.eq('location_name', selectedFilters.location);
             const { data: causesData, error: causesError } = await causesQuery;
@@ -401,12 +413,12 @@ class FloodMapApp {
             if (totalError) throw totalError;
             
             // Min year
-            const { data: minData, error: minError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).not('year', 'eq', '').order('year', { ascending: true }).limit(1);
+            const { data: minData, error: minError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (minError) throw minError;
             const minYear = minData[0]?.year;
             
             // Max year
-            const { data: maxData, error: maxError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).not('year', 'eq', '').order('year', { ascending: false }).limit(1);
+            const { data: maxData, error: maxError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (maxError) throw maxError;
             const maxYear = maxData[0]?.year;
             
