@@ -232,6 +232,11 @@ class FloodMapApp {
             if (selectedFilters.cause) yearsQuery = yearsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: yearsData, error: yearsError } = await yearsQuery;
             if (yearsError) throw yearsError;
+            console.log('📊 Raw yearsData sample (first 10):', yearsData.slice(0, 10));
+            console.log('🔍 Type of first year value:', typeof yearsData[0]?.year, '| Value:', yearsData[0]?.year);
+            console.log('📈 Total year records fetched:', yearsData.length);
+            console.log('📅 Sample of 20 year values:', yearsData.slice(0, 20).map(d => d.year));
+            console.log('📊 Year range in raw data - Min:', Math.min(...yearsData.map(d => d.year)), 'Max:', Math.max(...yearsData.map(d => d.year)));
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
             console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
@@ -306,6 +311,13 @@ class FloodMapApp {
             return String(a).localeCompare(String(b)); // Sort strings alphabetically
         });
 
+        console.log('🔧 _getUniqueValuesWithCount() processing field:', fieldName);
+        console.log('📊 First 20 sorted values:', sortedValues.slice(0, 20));
+        console.log('📊 Last 20 sorted values:', sortedValues.slice(-20));
+        console.log('🔍 Type of first sorted value:', typeof sortedValues[0], '| Value:', sortedValues[0]);
+        console.log('📈 Total unique values for', fieldName + ':', sortedValues.length);
+        if (fieldName === 'year') { console.log('📅 Year-specific debug - All years:', sortedValues); }
+
         return sortedValues;
     }
     
@@ -343,7 +355,14 @@ class FloodMapApp {
             yearSelect.appendChild(option);
         });
         console.log(`Added ${this.filterOptions.years.length} year options`);
-        
+        console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
+        console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
+        console.log('📅 All years in dropdown:', this.filterOptions.years);
+        console.log('🔍 Actual <option> elements in year dropdown:', yearSelect.querySelectorAll('option').length - 1);
+        console.log('🔍 Type of first year in filterOptions:', typeof this.filterOptions.years[0], '| Value:', this.filterOptions.years[0]);
+        console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
+        console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
+
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
         locationOptions.forEach(opt => opt.remove());
