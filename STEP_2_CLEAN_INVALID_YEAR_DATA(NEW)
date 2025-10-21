@@ -1,0 +1,59 @@
+### STEP_2_CLEAN_INVALID_YEAR_DATA(NEW)
+
+**Clean any invalid year data before changing the column type**
+
+Based on the verification queries from STEP_1, handle problematic year values:
+
+**If you found non-numeric year values:**
+
+1. **For year ranges (e.g., "1995-1996"):**
+   ```sql
+   -- Extract the first year from ranges
+   UPDATE floods 
+   SET year = SPLIT_PART(year, '-', 1)
+   WHERE year LIKE '%-%' AND year ~ '^[0-9]+-[0-9]+';
+   ```
+
+2. **For text values (e.g., "Unknown", "N/A"):**
+   ```sql
+   -- Convert text values to NULL
+   UPDATE floods 
+   SET year = NULL
+   WHERE year !~ '^[0-9]+ AND year IS NOT NULL AND year != '';
+   ```
+
+3. **For years with extra characters (e.g., "2005 ", " 1995"):**
+   ```sql
+   -- Trim whitespace
+   UPDATE floods 
+   SET year = TRIM(year)
+   WHERE year IS NOT NULL AND year != '';
+   ```
+
+4. **For dates stored in year field (e.g., "2005-03-15"):**
+   ```sql
+   -- Extract year from date format
+   UPDATE floods 
+   SET year = SUBSTRING(year FROM 1 FOR 4)
+   WHERE year ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}';
+   ```
+
+5. **Verify cleaning was successful:**
+   ```sql
+   -- Should return 0 rows if all cleaned
+   SELECT id, year, location_name 
+   FROM floods 
+   WHERE year !~ '^[0-9]+ AND year IS NOT NULL AND year != ''
+   LIMIT 10;
+   
+   -- Check for unrealistic years (before 1800 or after 2030)
+   SELECT id, year, location_name
+   FROM floods
+   WHERE year::INTEGER < 1800 OR year::INTEGER > 2030;
+   ```
+
+**Important notes:**
+- Run each UPDATE query individually and verify the affected row count
+- If you're unsure about a specific pattern, query it first with SELECT before UPDATE
+- Document any data transformations for future reference
+- If many records have invalid years, consider reviewing the source data in `floods_greece.db`

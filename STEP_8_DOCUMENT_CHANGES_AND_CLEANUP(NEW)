@@ -1,0 +1,80 @@
+### STEP_8_DOCUMENT_CHANGES_AND_CLEANUP(NEW)
+
+**Document the fix and clean up temporary investigation files**
+
+1. **Update project documentation:**
+   - Consider adding a note in `README.md` about the year field data type
+   - Document the migration that was performed
+   - Add a troubleshooting entry about data type issues
+   - Example section to add:
+     ```markdown
+     ## Data Type Corrections
+     
+     ### Year Field Migration (2025-10-21)
+     The `year` column was originally created as TEXT, causing incorrect sorting behavior.
+     It has been migrated to INTEGER for proper numeric sorting and filtering.
+     
+     If you encounter sorting issues with other fields, verify their data types in
+     `db/migrations/supabase_schema.sql` and ensure numeric fields use appropriate types.
+     ```
+
+2. **Clean up temporary investigation files:**
+   - Delete the investigation files created in the previous troubleshooting session:
+     - `INVESTIGATION_STEP_1_SUPABASE_DATA_VERIFICATION`
+     - `INVESTIGATION_STEP_2_RLS_POLICY_VERIFICATION`
+     - `INVESTIGATION_STEP_3_MIGRATION_VERIFICATION`
+     - `INVESTIGATION_STEP_4_FRONTEND_DEBUGGING`
+     - `INVESTIGATION_STEP_5_DATA_QUALITY_ANALYSIS`
+     - `RESOLUTION_OPTION_1_RE_MIGRATE_DATA`
+     - `RESOLUTION_OPTION_2_FIX_DATA_QUALITY`
+     - `RESOLUTION_OPTION_3_FIX_RLS_POLICIES`
+     - `VERIFICATION_CHECKLIST`
+   - These were helpful for investigation but are no longer needed
+
+3. **Clean up the current step files:**
+   - After completing all steps, delete the STEP_* files created during this fix:
+     - `STEP_1_BACKUP_AND_VERIFY_DATA(NEW)`
+     - `STEP_2_CLEAN_INVALID_YEAR_DATA(NEW)`
+     - `STEP_3_ALTER_COLUMN_TYPE_IN_SUPABASE(NEW)`
+     - `STEP_4_VERIFY_FRONTEND_COMPATIBILITY(NEW)`
+     - `STEP_5_VERIFY_SORTING_IN_SUPABASE(NEW)`
+     - `STEP_6_TEST_FILTERS_AND_STATISTICS(NEW)`
+     - `STEP_7_OPTIONAL_CHECK_OTHER_NUMERIC_FIELDS(NEW)`
+     - `STEP_8_DOCUMENT_CHANGES_AND_CLEANUP(NEW)`
+   - Or keep them in a `docs/migrations/` folder for historical reference
+
+4. **Commit changes to version control:**
+   ```bash
+   git add db/migrations/supabase_schema.sql
+   git commit -m "Fix: Change year column from TEXT to INTEGER for correct sorting
+   
+   - Updated supabase_schema.sql to define year as INTEGER
+   - Resolves issue where years were sorting lexicographically (1995 > 2022)
+   - Records from ID 1885-1994 now sort correctly by year
+   - No frontend changes required - JavaScript handles both types"
+   git push origin main
+   ```
+
+5. **Verify GitHub Pages deployment (if applicable):**
+   - If using GitHub Pages deployment (as mentioned in `README.md`)
+   - The schema change only affects Supabase, not the deployed frontend
+   - No redeployment is needed
+   - The frontend will automatically use the corrected data type from Supabase
+
+6. **Create a backup of the corrected database:**
+   - Export the floods table again as CSV
+   - Save as `floods_corrected_YYYY-MM-DD.csv`
+   - This serves as a reference point after the fix
+   - Compare with the backup from STEP_1 to verify no data loss
+
+7. **Final verification checklist:**
+   - [ ] Year column is INTEGER in Supabase
+   - [ ] Schema file updated to reflect INTEGER type
+   - [ ] Sorting works correctly in Supabase Table Editor
+   - [ ] Frontend filters show all years and causes
+   - [ ] Statistics display correct year range
+   - [ ] No JavaScript errors in browser console
+   - [ ] All 1992 records are still present
+   - [ ] Changes committed to version control
+   - [ ] Documentation updated
+   - [ ] Temporary files cleaned up

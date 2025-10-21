@@ -1,0 +1,82 @@
+### STEP_6_TEST_FILTERS_AND_STATISTICS(NEW)
+
+**Comprehensive testing of filters and statistics with corrected year data**
+
+1. **Test year filter in the web application:**
+   - Open the website in a browser
+   - Navigate to the filters panel
+   - Open the **Year** dropdown
+   - Verify years are listed in correct order (not text-sorted)
+   - Verify the full range of years is visible (should include years from 1980s-2022)
+   - Previously, the user mentioned seeing "years till 2005" - this should now show all years
+
+2. **Test cause filter:**
+   - Open the **Cause of Flood** dropdown
+   - The user mentioned seeing only "2 causes" but expecting more
+   - Verify all unique causes are now visible
+   - This issue might have been related to the year sorting affecting filter population
+
+3. **Test combined filtering:**
+   - Select a year from the 1980s or 1990s (the problematic range)
+   - Verify flood events from that year appear on the map
+   - Select a cause filter
+   - Verify the combination works correctly
+   - Check that the filter count indicator updates properly
+
+4. **Test statistics panel:**
+   - Open the statistics panel
+   - Verify the **Year Range** displays correctly (e.g., "1985-2022")
+   - Previously, text sorting might have shown an incorrect range
+   - Verify **Total Events** still shows ~1992 records
+   - Check other statistics are calculated correctly
+
+5. **Test year-based queries:**
+   Run these queries in Supabase SQL Editor to verify data integrity:
+
+   ```sql
+   -- Count events by decade
+   SELECT 
+     FLOOR(year / 10) * 10 as decade,
+     COUNT(*) as event_count
+   FROM floods
+   WHERE year IS NOT NULL
+   GROUP BY FLOOR(year / 10) * 10
+   ORDER BY decade DESC;
+   
+   -- Verify records exist across the full time range
+   SELECT 
+     MIN(year) as earliest_year,
+     MAX(year) as latest_year,
+     COUNT(*) as total_records,
+     COUNT(DISTINCT year) as unique_years
+   FROM floods
+   WHERE year IS NOT NULL;
+   
+   -- Check if the "missing" years are now accessible
+   SELECT year, COUNT(*) as count
+   FROM floods
+   WHERE year > 2005
+   GROUP BY year
+   ORDER BY year;
+   ```
+
+6. **Verify the original issue is resolved:**
+   - **Original problem:** "I see 2 causes and the years till 2005 but I know that I have records with more"
+   - **Expected after fix:** All causes should be visible, and years beyond 2005 should appear in filters
+   - The TEXT sorting was likely causing the filter population logic to miss certain values
+   - With INTEGER sorting, the `_getUniqueValuesWithCount` method in `static/app.js` should now capture all unique values correctly
+
+7. **Test edge cases:**
+   - Filter by the earliest year in the dataset
+   - Filter by the latest year in the dataset
+   - Filter by years in the problematic ID range (1885-1994)
+   - Verify all filters return the expected results
+   - Test clearing filters and reapplying them
+
+**Success criteria:**
+- Year dropdown shows all years from the dataset in correct numeric order
+- Cause dropdown shows all unique causes (more than 2)
+- Years beyond 2005 are visible and selectable
+- Statistics show correct year range
+- Map displays flood events correctly for all year selections
+- No JavaScript errors in browser console

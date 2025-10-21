@@ -1,0 +1,59 @@
+### STEP_1_BACKUP_AND_VERIFY_DATA(NEW)
+
+**Before making any schema changes, create a backup and verify data integrity**
+
+1. **Export current data from Supabase:**
+   - Navigate to Supabase Dashboard → Table Editor → floods table
+   - Click the three-dot menu → Export as CSV
+   - Save the CSV file as `floods_backup_YYYY-MM-DD.csv`
+   - This provides a safety net in case the migration encounters issues
+
+2. **Verify year data quality with SQL queries:**
+   Run these queries in Supabase SQL Editor to understand the data:
+
+   ```sql
+   -- Check total record count
+   SELECT COUNT(*) as total_records FROM floods;
+   
+   -- Check for NULL or empty year values
+   SELECT COUNT(*) as null_or_empty_years 
+   FROM floods 
+   WHERE year IS NULL OR year = '';
+   
+   -- Check for non-numeric year values
+   SELECT id, year, location_name 
+   FROM floods 
+   WHERE year !~ '^[0-9]+ AND year IS NOT NULL AND year != ''
+   LIMIT 20;
+   
+   -- Check year range (as text)
+   SELECT MIN(year) as min_year_text, MAX(year) as max_year_text 
+   FROM floods 
+   WHERE year IS NOT NULL AND year != '';
+   
+   -- Check year distribution to identify problematic records
+   SELECT year, COUNT(*) as count 
+   FROM floods 
+   WHERE year IS NOT NULL AND year != ''
+   GROUP BY year 
+   ORDER BY year DESC
+   LIMIT 50;
+   
+   -- Specifically check records after ID 1884 (where issue was noticed)
+   SELECT id, year, location_name, date_of_commencement
+   FROM floods
+   WHERE id >= 1885 AND id <= 1994
+   ORDER BY id;
+   ```
+
+3. **Document findings:**
+   - Note any NULL or empty year values (these will remain NULL after conversion)
+   - Identify any non-numeric year values (e.g., "1995-1996", "Unknown", etc.)
+   - These problematic values need to be cleaned before or during the migration
+   - Record the current min/max year range for verification after migration
+
+4. **Expected results:**
+   - Total records should be ~1992
+   - Most year values should be 4-digit numbers (1900-2022)
+   - Any non-numeric values need special handling (convert to NULL or extract year)
+   - Records 1885-1994 should show older years (1980s-1990s) that are currently sorting incorrectly
