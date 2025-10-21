@@ -36,6 +36,7 @@ MANIFEST
 venv/
 env/
 ENV/
+.env.example
 
 # FastAPI Backend (not needed for Supabase frontend)
 main.py
