@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E5C8A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Water drop icon representing floods -->
+  <path d="M 50 10 C 50 10, 30 35, 30 55 C 30 68, 39 78, 50 78 C 61 78, 70 68, 70 55 C 70 35, 50 10, 50 10 Z" 
+        fill="url(#waterGradient)" 
+        stroke="#1A3A5A" 
+        stroke-width="2"/>
+  <!-- Greece map outline (simplified) -->
+  <path d="M 35 85 L 40 82 L 43 85 L 47 83 L 50 86 L 54 84 L 58 87 L 62 85 L 65 88" 
+        fill="none" 
+        stroke="#1A3A5A" 
+        stroke-width="1.5"
+        stroke-linecap="round"/>
+</svg>

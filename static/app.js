@@ -223,7 +223,7 @@ class FloodMapApp {
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
-            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Note: Supabase has a default 1000-row limit that may truncate results. Process in JS for efficiency with ~2000 records.
+            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Process in JS for efficiency with ~2000 records.
             
             // Years query with pagination to fetch all records despite Supabase's 1000-row limit
             // Supabase/PostgREST default max-rows limit is 1000. This can be increased in Supabase project settings under API > Settings > Max Rows.
