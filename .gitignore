@@ -88,4 +88,4 @@ Thumbs.db
 db/migrations/
 .utils/
 verify_for_github.sh
-supabase/
+supabase/migrations/
