@@ -252,24 +252,40 @@ class FloodMapApp {
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
             console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
-            // Locations query
-            console.log('Querying locations...');
-            let locationsQuery = window.supabaseClient.from('floods').select('location_name');
-            if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
-            if (selectedFilters.cause) locationsQuery = locationsQuery.eq('cause_of_flood', selectedFilters.cause);
-            const { data: locationsData, error: locationsError } = await locationsQuery;
-            if (locationsError) throw locationsError;
+            // Locations query with pagination to fetch all records
+            console.log('Querying locations with pagination...');
+            let allLocationsData = [];
+            start = 0;
+            while (true) {
+                let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
+                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
+                if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
+                const { data: batchData, error } = await query;
+                if (error) throw error;
+                allLocationsData.push(...batchData);
+                if (batchData.length < batchSize) break;
+                start += batchSize;
+            }
+            const locationsData = allLocationsData;
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             locations.splice(100);
             console.log(`Processing ${locationsData.length} location values, found ${locations.length} unique locations (showing top 100)`);
             
-            // Causes query
-            console.log('Querying causes...');
-            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood');
-            if (selectedFilters.year) causesQuery = causesQuery.eq('year', selectedFilters.year);
-            if (selectedFilters.location) causesQuery = causesQuery.eq('location_name', selectedFilters.location);
-            const { data: causesData, error: causesError } = await causesQuery;
-            if (causesError) throw causesError;
+            // Causes query with pagination to fetch all records
+            console.log('Querying causes with pagination...');
+            let allCausesData = [];
+            start = 0;
+            while (true) {
+                let query = window.supabaseClient.from('floods').select('cause_of_flood').not('cause_of_flood', 'is', null).range(start, start + batchSize - 1);
+                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
+                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                const { data: batchData, error } = await query;
+                if (error) throw error;
+                allCausesData.push(...batchData);
+                if (batchData.length < batchSize) break;
+                start += batchSize;
+            }
+            const causesData = allCausesData;
             const causes = this._getUniqueValuesWithCount(causesData, 'cause_of_flood');
             console.log(`Processing ${causesData.length} cause values, found ${causes.length} unique causes`);
             
