@@ -256,38 +256,44 @@ class FloodMapApp {
             console.log('Querying locations with pagination...');
             let allLocationsData = [];
             start = 0;
+            let locationBatches = 0;
             while (true) {
                 let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
                 const { data: batchData, error } = await query;
                 if (error) throw error;
+                locationBatches++;
                 allLocationsData.push(...batchData);
+                console.log(`📦 Location batch ${locationBatches}: fetched ${batchData.length} records (total so far: ${allLocationsData.length})`);
                 if (batchData.length < batchSize) break;
                 start += batchSize;
             }
             const locationsData = allLocationsData;
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             locations.splice(100);
-            console.log(`Processing ${locationsData.length} location values, found ${locations.length} unique locations (showing top 100)`);
+            console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
             
             // Causes query with pagination to fetch all records
             console.log('Querying causes with pagination...');
             let allCausesData = [];
             start = 0;
+            let causeBatches = 0;
             while (true) {
                 let query = window.supabaseClient.from('floods').select('cause_of_flood').not('cause_of_flood', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
                 const { data: batchData, error } = await query;
                 if (error) throw error;
+                causeBatches++;
                 allCausesData.push(...batchData);
+                console.log(`📦 Cause batch ${causeBatches}: fetched ${batchData.length} records (total so far: ${allCausesData.length})`);
                 if (batchData.length < batchSize) break;
                 start += batchSize;
             }
             const causesData = allCausesData;
             const causes = this._getUniqueValuesWithCount(causesData, 'cause_of_flood');
-            console.log(`Processing ${causesData.length} cause values, found ${causes.length} unique causes`);
+            console.log(`✅ Causes: Fetched ${causesData.length} total records in ${causeBatches} batch(es), found ${causes.length} unique causes`);
             
             this.filterOptions = { years, locations, causes };
             
