@@ -227,18 +227,17 @@ class FloodMapApp {
             
             // Years query
             console.log('Querying years...');
-            let yearsQuery = window.supabaseClient.from('floods').select('year').limit(5000);
+            let yearsQuery = window.supabaseClient.from('floods').select('year').limit(10000);
             if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.cause) yearsQuery = yearsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: yearsData, error: yearsError } = await yearsQuery;
             if (yearsError) throw yearsError;
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
-            years.sort((a, b) => b.localeCompare(a));
             console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
             // Locations query
             console.log('Querying locations...');
-            let locationsQuery = window.supabaseClient.from('floods').select('location_name').limit(5000);
+            let locationsQuery = window.supabaseClient.from('floods').select('location_name').limit(10000);
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
             if (selectedFilters.cause) locationsQuery = locationsQuery.eq('cause_of_flood', selectedFilters.cause);
             const { data: locationsData, error: locationsError } = await locationsQuery;
@@ -249,7 +248,7 @@ class FloodMapApp {
             
             // Causes query
             console.log('Querying causes...');
-            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood').limit(5000);
+            let causesQuery = window.supabaseClient.from('floods').select('cause_of_flood').limit(10000);
             if (selectedFilters.year) causesQuery = causesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) causesQuery = causesQuery.eq('location_name', selectedFilters.location);
             const { data: causesData, error: causesError } = await causesQuery;
@@ -285,25 +284,29 @@ class FloodMapApp {
     }
     
     _getUniqueValuesWithCount(data, fieldName) {
-        // Filter out null, undefined, empty string, and whitespace-only values
-        const filtered = data.filter(item => {
+        // Use a Set for efficient unique value extraction, handling both strings and numbers
+        const uniqueValues = new Set();
+        data.forEach(item => {
             const value = item[fieldName];
-            return value != null && typeof value === 'string' && value.trim() !== '';
+            if (value !== null && value !== undefined) {
+                const processedValue = typeof value === 'string' ? value.trim() : value;
+                if (processedValue !== '') {
+                    uniqueValues.add(processedValue);
+                }
+            }
         });
-        // Trim all string values
-        const trimmed = filtered.map(item => ({ ...item, [fieldName]: item[fieldName].trim() }));
-        // Create frequency map using reduce
-        const freqMap = trimmed.reduce((acc, item) => {
-            const value = item[fieldName];
-            acc[value] = (acc[value] || 0) + 1;
-            return acc;
-        }, {});
-        // Convert to array of {value, count} objects
-        const freqArray = Object.entries(freqMap).map(([value, count]) => ({ value, count }));
-        // Sort by count descending
-        freqArray.sort((a, b) => b.count - a.count);
-        // Return array of just the values
-        return freqArray.map(item => item.value);
+
+        // Convert the Set to an array and sort it
+        const sortedValues = Array.from(uniqueValues);
+        sortedValues.sort((a, b) => {
+            // Ensure consistent sorting for strings and numbers
+            if (typeof a === 'number' && typeof b === 'number') {
+                return b - a; // Sort numbers in descending order (e.g., years)
+            }
+            return String(a).localeCompare(String(b)); // Sort strings alphabetically
+        });
+
+        return sortedValues;
     }
     
     populateFilterDropdowns(selectedFilters = {}) {

@@ -80,3 +80,10 @@ Thumbs.db
 # Temporary Files
 *.tmp
 *.temp
+
+# Project Documentation and Internal Scripts
+*.md
+.serena/
+db/migrations/
+.utils/
+verify_for_github.sh
