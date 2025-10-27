@@ -236,29 +236,86 @@ class FloodMapApp {
             }
         });
         
+        // Welcome modal controls
+        const welcomeModal = document.getElementById('welcome-modal');
+        const closeWelcome = document.getElementById('close-welcome');
+        const enterWebGIS = document.getElementById('enter-webgis');
+        const aboutBtn = document.getElementById('about-btn');
+
+        // Function to close welcome modal and set localStorage flag
+        const closeWelcomeModal = () => {
+            if (welcomeModal) {
+                welcomeModal.classList.remove('active');
+                localStorage.setItem('hasVisitedBefore', 'true');
+            }
+        };
+
+        // Check if this is the first visit
+        if (welcomeModal) {
+            const hasVisited = localStorage.getItem('hasVisitedBefore');
+
+            if (!hasVisited) {
+                // Show welcome modal on first visit with a small delay
+                setTimeout(() => {
+                    welcomeModal.classList.add('active');
+                }, 300);
+            }
+
+            // Close button event listener
+            if (closeWelcome) {
+                closeWelcome.addEventListener('click', closeWelcomeModal);
+            }
+
+            // Enter WebGIS button event listener
+            if (enterWebGIS) {
+                enterWebGIS.addEventListener('click', closeWelcomeModal);
+            }
+
+            // Close when clicking outside modal content
+            welcomeModal.addEventListener('click', (event) => {
+                if (event.target === welcomeModal) {
+                    closeWelcomeModal();
+                }
+            });
+
+            // ESC key to close welcome modal
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && welcomeModal.classList.contains('active')) {
+                    closeWelcomeModal();
+                }
+            });
+        }
+
+        // Manual trigger for welcome modal (About button)
+        if (aboutBtn && welcomeModal) {
+            aboutBtn.addEventListener('click', () => {
+                welcomeModal.classList.add('active');
+            });
+        }
+
         // References modal controls
         const referencesBtn = document.getElementById('references-btn');
         const referencesModal = document.getElementById('references-modal');
         const closeReferences = document.getElementById('close-references');
-        
+
         if (referencesBtn && referencesModal) {
             referencesBtn.addEventListener('click', () => {
                 referencesModal.classList.add('active');
             });
-            
+
             if (closeReferences) {
                 closeReferences.addEventListener('click', () => {
                     referencesModal.classList.remove('active');
                 });
             }
-            
+
             // Close when clicking outside modal content
             referencesModal.addEventListener('click', (event) => {
                 if (event.target === referencesModal) {
                     referencesModal.classList.remove('active');
                 }
             });
-            
+
             // ESC key to close references modal
             document.addEventListener('keydown', (event) => {
                 if (event.key === 'Escape' && referencesModal.classList.contains('active')) {

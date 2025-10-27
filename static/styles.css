@@ -1398,11 +1398,25 @@ h6 { font-size: 0.75rem; }
     font-size: 0.95rem;
 }
 
+.reference-item .citation-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    letter-spacing: 0.5px;
+}
+
 .reference-item p {
     margin: 0;
     line-height: 1.6;
     color: var(--text-secondary);
     font-size: 0.9rem;
+}
+
+.reference-item p:not(.citation-label) {
+    color: var(--text-primary);
 }
 
 .reference-item a {
@@ -1433,6 +1447,137 @@ h6 { font-size: 0.75rem; }
         transform: translateY(0);
         opacity: 1;
     }
+}
+
+/* Welcome Modal Specific Styles */
+.welcome-modal .modal-content {
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.welcome-intro {
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.welcome-intro p {
+    margin: 0;
+}
+
+.welcome-database-info {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 4px;
+}
+
+.welcome-database-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.welcome-research {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.welcome-research p {
+    margin: 0;
+}
+
+.welcome-citation {
+    background: #f8f9fa;
+    padding: 1.25rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-blue);
+    margin-bottom: 1.5rem;
+}
+
+.citation-primary,
+.citation-secondary {
+    margin-bottom: 1rem;
+}
+
+.citation-secondary {
+    margin-bottom: 0;
+}
+
+.citation-label {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+}
+
+.welcome-citation p:not(.citation-label) {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.welcome-citation a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    word-break: break-word;
+}
+
+.welcome-citation a:hover {
+    text-decoration: underline;
+}
+
+.welcome-footer {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-welcome-enter {
+    padding: 0.875rem 2rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: white;
+    background: var(--primary-color);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-welcome-enter:hover {
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-welcome-enter:active {
+    transform: translateY(0);
+}
+
+/* Welcome Modal Animation */
+@keyframes welcomeSlideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.welcome-modal.active .modal-content {
+    animation: welcomeSlideIn 0.4s ease-out;
 }
 
 /* Success banner */
@@ -1960,12 +2105,51 @@ body::-webkit-scrollbar-thumb:hover {
         width: 95%;
         max-height: 90vh;
     }
-    
+
     .modal-header,
     .modal-body {
         padding: 1rem;
     }
-    
+
+    /* Welcome Modal Mobile Adjustments */
+    .welcome-modal .modal-content {
+        max-width: 95%;
+        padding: 0;
+    }
+
+    .welcome-intro,
+    .welcome-research {
+        font-size: 0.85rem;
+    }
+
+    .welcome-database-info {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-database-info p {
+        font-size: 0.8rem;
+    }
+
+    .welcome-citation {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-citation p:not(.citation-label) {
+        font-size: 0.8rem;
+    }
+
+    .welcome-footer {
+        padding-top: 1rem;
+    }
+
+    .btn-welcome-enter {
+        width: 100%;
+        padding: 0.75rem 1.5rem;
+        font-size: 0.8rem;
+    }
+
     .reference-item {
         font-size: 0.85rem;
     }
