@@ -274,7 +274,7 @@ class FloodMapApp {
         
         // ESC key to close modal
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && modal.style.display === 'block') {
+            if (event.key === 'Escape' && modal.classList.contains('active')) {
                 this.closeModal();
             }
         });
@@ -916,7 +916,7 @@ class FloodMapApp {
         this.modalElements.detailsContainer.innerHTML = html;
         
         // Show modal - CSS handles centering
-        this.modalElements.modal.style.display = 'flex';
+        this.modalElements.modal.classList.add('active');
         
         // Prevent background scrolling
         document.body.classList.add('modal-open');
@@ -1135,7 +1135,7 @@ class FloodMapApp {
             this.cacheModalElements();
         }
         
-        this.modalElements.modal.style.display = 'none';
+        this.modalElements.modal.classList.remove('active');
         // Re-enable background scrolling
         document.body.classList.remove('modal-open');
     }
