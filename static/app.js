@@ -44,14 +44,52 @@ class FloodMapApp {
             markerZoomAnimation: true
         }).setView([39.0742, 21.8243], 7);
         
-        // Add OpenStreetMap tiles with optimized settings
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 18,
-            updateWhenZooming: false,
-            updateWhenIdle: true,
-            keepBuffer: 2
+        // Define multiple basemap options
+        const baseMaps = {
+            "OpenStreetMap": L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }),
+            "OpenTopoMap": L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenTopoMap contributors',
+                maxZoom: 17
+            }),
+            "Satellite (ESRI)": L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: '© Esri',
+                maxZoom: 19
+            }),
+            "CartoDB Positron": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CartoDB',
+                maxZoom: 19
+            }),
+            "CartoDB Dark": L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap, © CartoDB',
+                maxZoom: 19
+            })
+        };
+        
+        // Add default basemap (OpenStreetMap)
+        baseMaps["OpenStreetMap"].addTo(this.map);
+        
+        // Add layer control for basemap selection (top-right position)
+        L.control.layers(baseMaps, null, {
+            position: 'topright',
+            collapsed: true
         }).addTo(this.map);
+        
+        // Add scale control (bottom-left position)
+        L.control.scale({
+            position: 'bottomleft',
+            metric: true,
+            imperial: false,
+            maxWidth: 150
+        }).addTo(this.map);
+        
+        // Add north arrow control
+        this.addNorthArrow();
+        
+        // Add ruler/measurement control
+        this.addRulerControl();
         
         // Initialize marker cluster without spider connections
         this.markerCluster = L.markerClusterGroup({
@@ -473,8 +511,8 @@ class FloodMapApp {
         try {
             console.log('Loading flood data with filters:', filters);
             
-            // Build query
-            let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name').not('latitude', 'is', null).not('longitude', 'is', null);
+            // Build query - include deaths_toll for tooltip
+            let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
             
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
@@ -546,11 +584,16 @@ class FloodMapApp {
                 this.showFloodDetails(flood.id);
             });
             
-            // Add tooltip on hover instead of popup
+            // Add enhanced tooltip on hover with more info
+            const deathsToll = flood.deaths_toll && flood.deaths_toll !== '0' ? flood.deaths_toll : 'None';
+            const cause = flood.cause_of_flood ? this.escapeHtml(flood.cause_of_flood) : 'N/A';
+            
             const tooltipContent = `
-                <div style="font-size: 12px; padding: 4px;">
-                    <strong>${this.escapeHtml(flood.location_name || 'Unknown')}</strong><br>
-                    Year: ${flood.year || 'N/A'}
+                <div style="font-size: 12px; padding: 6px; line-height: 1.4;">
+                    <strong style="font-size: 13px;">${this.escapeHtml(flood.location_name || 'Unknown')}</strong><br>
+                    <span style="color: #666;">Year:</span> <strong>${flood.year || 'N/A'}</strong><br>
+                    <span style="color: #666;">Casualties:</span> <strong>${deathsToll}</strong><br>
+                    <span style="color: #666;">Cause:</span> ${cause}
                 </div>
             `;
             
@@ -616,10 +659,13 @@ class FloodMapApp {
         }
         
         try {
-            const { data: flood, error } = await window.supabaseClient.from('floods').select('id, date_of_commencement, year, latitude, longitude, location_name, flood_event_name, deaths_toll, rainfall_duration, cause_of_flood, rainfall_height, relevant_information, source').eq('id', floodId).single();
+            const { data: flood, error } = await window.supabaseClient.from('floods').select('id, date_of_commencement, year, latitude, longitude, location_name, flood_event_name, deaths_toll, rainfall_duration, cause_of_flood, rainfall_height, relevant_information, source, reference').eq('id', floodId).single();
             if (error) throw error;
             
-            flood.added_by = 'Niki Evelpidou Team';
+            // Add default reference if not present in database
+            if (!flood.reference) {
+                flood.reference = 'https://doi.org/10.3390/cli11110226';
+            }
             
             // Cache the result
             this.floodDetailsCache.set(floodId, flood);
@@ -638,7 +684,7 @@ class FloodMapApp {
         }
         
         const fields = [
-            { key: 'id', label: 'Event ID', highlight: true },  // Add ID field with highlight
+            { key: 'id', label: 'Event ID', highlight: true },
             { key: 'date_of_commencement', label: 'Date' },
             { key: 'year', label: 'Year' },
             { key: 'location_name', label: 'Location' },
@@ -646,7 +692,7 @@ class FloodMapApp {
             { key: 'deaths_toll', label: 'Deaths' },
             { key: 'cause_of_flood', label: 'Cause' },
             { key: 'source', label: 'Source' },
-            { key: 'added_by', label: 'Added by' }
+            { key: 'reference', label: 'Reference', isLink: true }
         ];
         
         // Simple HTML string for better performance
@@ -655,15 +701,27 @@ class FloodMapApp {
             const value = flood[field.key];
             const displayValue = value && value.toString().trim() ? value : '-';
             const highlightClass = field.highlight ? 'detail-item-highlighted' : '';
+            
+            let valueHtml;
+            if (field.isLink && value && value.toString().trim() && value !== '-') {
+                // Make reference field a clickable link
+                valueHtml = `<a href="${this.escapeHtml(value)}" target="_blank" rel="noopener noreferrer" style="color: #0066ff; text-decoration: underline;">${this.escapeHtml(value)}</a>`;
+            } else if (field.key === 'id') {
+                valueHtml = `#${displayValue}`;
+            } else {
+                valueHtml = this.escapeHtml(displayValue);
+            }
+            
             html += `
                 <div class="detail-item ${highlightClass}">
                     <div class="detail-label">${field.label}</div>
-                    <div class="detail-value">${field.key === 'id' ? `#${displayValue}` : this.escapeHtml(displayValue)}</div>
+                    <div class="detail-value">${valueHtml}</div>
                 </div>
             `;
         });
         
-        // Add report issue button at the bottom
+        // Add report issue button at the bottom - COMMENTED OUT
+        /*
         html += `
             <div class="community-actions">
                 <button class="btn-report" onclick="app.openReportForm(${flood.id})">
@@ -676,6 +734,7 @@ class FloodMapApp {
                 </button>
             </div>
         `;
+        */
         
         // Update modal content
         this.modalElements.detailsContainer.innerHTML = html;
@@ -925,7 +984,61 @@ class FloodMapApp {
             '"': '&quot;',
             "'": '&#039;'
         };
-        return text ? text.replace(/[&<>"']/g, m => map[m]) : '';
+        // Convert to string first to handle numbers and other types
+        return text != null ? String(text).replace(/[&<>"']/g, m => map[m]) : '';
+    }
+    
+    // Add ruler/measurement control to the map
+    addRulerControl() {
+        // Check if leaflet-measure is available
+        if (typeof L.Control.Measure !== 'undefined') {
+            const measureControl = new L.Control.Measure({
+                position: 'topleft',
+                primaryLengthUnit: 'kilometers',
+                secondaryLengthUnit: 'meters',
+                primaryAreaUnit: 'sqkilometers',
+                secondaryAreaUnit: 'hectares',
+                activeColor: '#0066ff',
+                completedColor: '#000000'
+            });
+            measureControl.addTo(this.map);
+        } else {
+            console.warn('Leaflet Measure plugin not loaded, ruler functionality unavailable');
+        }
+    }
+    
+    // Add north arrow to the map
+    addNorthArrow() {
+        const NorthArrowControl = L.Control.extend({
+            options: {
+                position: 'topleft'
+            },
+            
+            onAdd: function(map) {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-north-arrow');
+                container.style.backgroundColor = 'white';
+                container.style.width = '40px';
+                container.style.height = '40px';
+                container.style.display = 'flex';
+                container.style.alignItems = 'center';
+                container.style.justifyContent = 'center';
+                container.style.cursor = 'default';
+                container.style.fontSize = '24px';
+                container.style.fontWeight = 'bold';
+                container.style.color = '#000';
+                container.style.userSelect = 'none';
+                container.innerHTML = '⬆<div style="position:absolute;bottom:2px;font-size:10px;font-weight:600;">N</div>';
+                container.title = 'North';
+                
+                // Prevent map interactions on the control
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+                
+                return container;
+            }
+        });
+        
+        this.map.addControl(new NorthArrowControl());
     }
     
     // Open report form for a specific event

@@ -21,6 +21,8 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <!-- Leaflet Measure Plugin CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.min.css" />
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="./styles.css">
@@ -41,7 +43,7 @@
             <div class="header-content">
                 <nav class="header-nav">
                     <a href="./index.html" class="nav-link active">Home</a>
-                    <a href="./submissions.html" class="nav-link">Submissions</a>
+                    <!-- <a href="./submissions.html" class="nav-link">Submissions</a> -->
                     <a href="./admin-login.html" id="admin-link" class="nav-link" style="display: none;">Admin</a>
                 </nav>
                 <div class="header-title">
@@ -88,9 +90,20 @@
                         
                         <!-- Filter Controls Container -->
                         <div id="filter-controls">
-                            <!-- Year Filter -->
+                            <!-- Year Range Filter -->
                             <div class="filter-group">
-                                <label for="year-filter">Year:</label>
+                                <label for="year-range-filter">Year Range:</label>
+                                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                                    <input type="number" id="year-min" placeholder="From" style="width: 48%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                    <span>-</span>
+                                    <input type="number" id="year-max" placeholder="To" style="width: 48%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                </div>
+                                <div style="font-size: 11px; color: var(--text-muted);">Range: <span id="year-range-display">-</span></div>
+                            </div>
+                            
+                            <!-- Year Filter (Single Year) -->
+                            <div class="filter-group">
+                                <label for="year-filter">Specific Year:</label>
                                 <select id="year-filter">
                                     <option value="">All Years</option>
                                 </select>
@@ -215,6 +228,8 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <!-- Leaflet Measure Plugin JS -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-measure@3.1.0/dist/leaflet-measure.min.js"></script>
     
     <!-- Supabase JavaScript Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
