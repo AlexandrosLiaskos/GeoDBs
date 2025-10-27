@@ -139,8 +139,8 @@ class FloodMapApp {
         const yearFilter = document.getElementById('year-filter');
         const locationFilter = document.getElementById('location-filter');
         const causeFilter = document.getElementById('cause-filter');
-        const yearMin = document.getElementById('year-min');
-        const yearMax = document.getElementById('year-max');
+        const yearFromFilter = document.getElementById('year-from-filter');
+        const yearToFilter = document.getElementById('year-to-filter');
         const yearRangeDisplay = document.getElementById('year-range-display');
 
         // Single handler for all filter changes to avoid redundancy
@@ -153,8 +153,8 @@ class FloodMapApp {
                 year: yearFilter.value,
                 location: locationFilter.value,
                 cause: causeFilter.value,
-                yearMin: yearMin.value ? parseInt(yearMin.value) : null,
-                yearMax: yearMax.value ? parseInt(yearMax.value) : null
+                yearMin: yearFromFilter.value ? parseInt(yearFromFilter.value) : null,
+                yearMax: yearToFilter.value ? parseInt(yearToFilter.value) : null
             };
 
             try {
@@ -169,8 +169,8 @@ class FloodMapApp {
 
         // Update year range display
         const updateYearRangeDisplay = () => {
-            const min = yearMin.value || '-';
-            const max = yearMax.value || '-';
+            const min = yearFromFilter.value || '-';
+            const max = yearToFilter.value || '-';
             yearRangeDisplay.textContent = `${min} to ${max}`;
         };
 
@@ -191,13 +191,13 @@ class FloodMapApp {
         });
 
         // Year range input listeners
-        yearMin.addEventListener('change', () => {
+        yearFromFilter.addEventListener('change', () => {
             updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
-        yearMax.addEventListener('change', () => {
+        yearToFilter.addEventListener('change', () => {
             updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
@@ -517,6 +517,33 @@ class FloodMapApp {
         console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
         console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
 
+        // Clear and repopulate year range filters
+        const yearFromSelect = document.getElementById('year-from-filter');
+        const yearToSelect = document.getElementById('year-to-filter');
+
+        // Clear and repopulate year-from-filter
+        const yearFromOptions = yearFromSelect.querySelectorAll('option:not(:first-child)');
+        yearFromOptions.forEach(opt => opt.remove());
+        this.filterOptions.years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearFromSelect.appendChild(option);
+        });
+
+        // Clear and repopulate year-to-filter
+        const yearToOptions = yearToSelect.querySelectorAll('option:not(:first-child)');
+        yearToOptions.forEach(opt => opt.remove());
+        this.filterOptions.years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearToSelect.appendChild(option);
+        });
+
+        // Update year range display after populating
+        updateYearRangeDisplay();
+
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
         locationOptions.forEach(opt => opt.remove());
@@ -835,8 +862,8 @@ class FloodMapApp {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
             cause: document.getElementById('cause-filter').value,
-            yearMin: document.getElementById('year-min').value ? parseInt(document.getElementById('year-min').value) : null,
-            yearMax: document.getElementById('year-max').value ? parseInt(document.getElementById('year-max').value) : null
+            yearMin: document.getElementById('year-from-filter').value ? parseInt(document.getElementById('year-from-filter').value) : null,
+            yearMax: document.getElementById('year-to-filter').value ? parseInt(document.getElementById('year-to-filter').value) : null
         };
 
         // Count active filters
@@ -961,8 +988,8 @@ class FloodMapApp {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
         document.getElementById('cause-filter').value = '';
-        document.getElementById('year-min').value = '';
-        document.getElementById('year-max').value = '';
+        document.getElementById('year-from-filter').value = '';
+        document.getElementById('year-to-filter').value = '';
         document.getElementById('year-range-display').textContent = '-';
 
         // Reload all filter options without any filters

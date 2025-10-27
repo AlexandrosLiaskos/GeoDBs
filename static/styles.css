@@ -410,15 +410,14 @@ h6 { font-size: 0.75rem; }
 /* Year Range Filter Styles */
 .year-range-inputs {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: space-between;
-    gap: 0.5rem;
-    align-items: center;
+    gap: 0.75rem;
     margin-bottom: 0.5rem;
 }
 
-.year-input {
-    flex: 1 1 45%;
+.year-range-select {
+    flex: 1 1 48%;
     padding: 0.875rem 1rem;
     background: var(--background-primary);
     border: none;
@@ -427,32 +426,43 @@ h6 { font-size: 0.75rem; }
     font-size: 0.875rem;
     color: var(--text-primary);
     transition: all var(--transition-fast);
+    cursor: pointer;
     outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    padding-right: 2.5rem;
+    min-height: 2.75rem;
 }
 
-.year-input::placeholder {
-    color: var(--text-muted);
-}
-
-.year-input:hover {
+.year-range-select:hover {
     border-bottom-color: var(--text-primary);
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-.year-input:focus {
+.year-range-select:focus {
     border-bottom-color: var(--primary-color);
     background-color: var(--background-primary);
     box-shadow: 0 2px 0 0 var(--primary-color);
 }
 
-.year-separator {
-    width: 100%;
-    text-align: center;
-    color: var(--text-secondary);
-    font-weight: 500;
-    padding: 0.5rem 0;
-    display: block;
+.year-range-select:active {
+    background-color: rgba(0, 0, 0, 0.05);
 }
+
+.year-range-select option {
+    padding: 0.5rem 1rem;
+}
+
+.year-range-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--background-secondary);
+}
+
+
 
 .year-range-display {
     font-size: 0.75rem;
@@ -848,84 +858,6 @@ h6 { font-size: 0.75rem; }
     position: relative;
 }
 
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    /* Flexbox for centering */
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background: white;
-    position: relative;
-    border-radius: 0;
-    width: 90%;
-    max-width: 500px;
-    max-height: 70vh;
-    overflow: hidden;
-    border: 1px solid #000;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    margin: auto;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    background: white;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.modal-header h3 {
-    color: #000;
-    font-size: 1rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.close {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.5rem;
-    color: #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 200ms ease;
-}
-
-.close:hover {
-    background: #f0f0f0;
-}
-
-.close svg {
-    width: 16px;
-    height: 16px;
-}
-
-.modal-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: calc(70vh - 80px);
-    overscroll-behavior: contain;
-    /* Ensure proper spacing for content */
-    display: flex;
-    flex-direction: column;
-}
 
 /* Flood Details Container */
 #flood-details {
@@ -2157,6 +2089,14 @@ body::-webkit-scrollbar-thumb:hover {
 
     .reference-item {
         font-size: 0.85rem;
+    }
+
+    .year-range-inputs {
+        flex-direction: column;
+    }
+
+    .year-range-select {
+        flex: 1 1 100%;
     }
     
     /* Login page responsive */

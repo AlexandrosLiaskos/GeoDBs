@@ -135,9 +135,12 @@
                             <div class="filter-group">
                                 <label for="year-range-filter">Year Range:</label>
                                 <div class="year-range-inputs">
-                                    <input type="number" id="year-min" placeholder="From" class="year-input">
-                                    <span class="year-separator">-</span>
-                                    <input type="number" id="year-max" placeholder="To" class="year-input">
+                                    <select id="year-from-filter" class="year-range-select">
+                                        <option value="">From Year</option>
+                                    </select>
+                                    <select id="year-to-filter" class="year-range-select">
+                                        <option value="">To Year</option>
+                                    </select>
                                 </div>
                                 <div class="year-range-display">Range: <span id="year-range-display">-</span></div>
                             </div>
