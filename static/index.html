@@ -93,12 +93,12 @@
                             <!-- Year Range Filter -->
                             <div class="filter-group">
                                 <label for="year-range-filter">Year Range:</label>
-                                <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
-                                    <input type="number" id="year-min" placeholder="From" style="width: 48%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-                                    <span>-</span>
-                                    <input type="number" id="year-max" placeholder="To" style="width: 48%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+                                <div class="year-range-inputs">
+                                    <input type="number" id="year-min" placeholder="From" class="year-input">
+                                    <span class="year-separator">-</span>
+                                    <input type="number" id="year-max" placeholder="To" class="year-input">
                                 </div>
-                                <div style="font-size: 11px; color: var(--text-muted);">Range: <span id="year-range-display">-</span></div>
+                                <div class="year-range-display">Range: <span id="year-range-display">-</span></div>
                             </div>
                             
                             <!-- Year Filter (Single Year) -->

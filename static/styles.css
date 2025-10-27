@@ -407,6 +407,55 @@ h6 { font-size: 0.75rem; }
     background-color: var(--background-secondary);
 }
 
+/* Year Range Filter Styles */
+.year-range-inputs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.year-input {
+    flex: 1;
+    padding: 0.875rem 1rem;
+    background: var(--background-primary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    outline: none;
+}
+
+.year-input::placeholder {
+    color: var(--text-muted);
+}
+
+.year-input:hover {
+    border-bottom-color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.year-input:focus {
+    border-bottom-color: var(--primary-color);
+    background-color: var(--background-primary);
+    box-shadow: 0 2px 0 0 var(--primary-color);
+}
+
+.year-separator {
+    color: var(--text-secondary);
+    font-weight: 500;
+    padding: 0 0.25rem;
+}
+
+.year-range-display {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 /* Filter dropdowns use native select behavior for accessibility and performance */
 
 
