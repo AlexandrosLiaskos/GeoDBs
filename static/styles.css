@@ -2199,6 +2199,107 @@ body::-webkit-scrollbar-thumb:hover {
     border: 0;
 }
 
+/* Measurement Tool Styles */
+.measurement-control {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.measurement-btn {
+    width: 36px;
+    height: 36px;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms ease;
+    color: #333;
+}
+
+.measurement-btn:first-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.measurement-btn:last-child {
+    border-radius: 0 0 4px 4px;
+    border-bottom: none;
+}
+
+.measurement-btn:hover {
+    background: #f5f5f5;
+}
+
+.measurement-btn.active {
+    background: #0066ff;
+    color: white;
+}
+
+.measurement-clear-btn {
+    font-size: 16px;
+}
+
+.measurement-info {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    min-width: 200px;
+    z-index: 1000;
+}
+
+.measurement-info-content {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #333;
+}
+
+.measurement-title {
+    font-weight: 600;
+    color: #0066ff;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.measurement-stat {
+    padding: 4px 0;
+    color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+}
+
+.measurement-hint {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-size: 11px;
+    color: #999;
+    font-style: italic;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .measurement-info {
+        min-width: 160px;
+    }
+
+    .measurement-info-content {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .measurement-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 16px;
+    }
+}
+}
+
 /* Focus Visible */
 *:focus-visible {
     outline: 2px solid var(--accent-blue);

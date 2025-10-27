@@ -87,9 +87,9 @@ class FloodMapApp {
         
         // Add north arrow control
         this.addNorthArrow();
-        
-        // Add ruler/measurement control
-        this.addRulerControl();
+
+        // Add custom measurement tool
+        this.measurementTool = new MeasurementTool(this.map);
         
         // Initialize marker cluster without spider connections
         this.markerCluster = L.markerClusterGroup({
@@ -139,19 +139,24 @@ class FloodMapApp {
         const yearFilter = document.getElementById('year-filter');
         const locationFilter = document.getElementById('location-filter');
         const causeFilter = document.getElementById('cause-filter');
-        
+        const yearMin = document.getElementById('year-min');
+        const yearMax = document.getElementById('year-max');
+        const yearRangeDisplay = document.getElementById('year-range-display');
+
         // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
             // Skip if we're already updating
             if (this.isUpdatingFilters) return;
             this.isUpdatingFilters = true;
-            
+
             const selectedFilters = {
                 year: yearFilter.value,
                 location: locationFilter.value,
-                cause: causeFilter.value
+                cause: causeFilter.value,
+                yearMin: yearMin.value ? parseInt(yearMin.value) : null,
+                yearMax: yearMax.value ? parseInt(yearMax.value) : null
             };
-            
+
             try {
                 // Update available options in other filters
                 await this.loadFilterOptions(selectedFilters);
@@ -161,19 +166,39 @@ class FloodMapApp {
                 this.isUpdatingFilters = false;
             }
         };
-        
+
+        // Update year range display
+        const updateYearRangeDisplay = () => {
+            const min = yearMin.value || '-';
+            const max = yearMax.value || '-';
+            yearRangeDisplay.textContent = `${min} to ${max}`;
+        };
+
         // Add change listeners with debouncing
         yearFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
-        
+
         locationFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
-        
+
         causeFilter.addEventListener('change', () => {
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
+        });
+
+        // Year range input listeners
+        yearMin.addEventListener('change', () => {
+            updateYearRangeDisplay();
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
+        });
+
+        yearMax.addEventListener('change', () => {
+            updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -513,8 +538,10 @@ class FloodMapApp {
             
             // Build query - include deaths_toll for tooltip
             let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
-            
+
             if (filters.year) query = query.eq('year', filters.year);
+            if (filters.yearMin) query = query.gte('year', filters.yearMin);
+            if (filters.yearMax) query = query.lte('year', filters.yearMax);
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.cause) query = query.eq('cause_of_flood', filters.cause);
             
@@ -750,9 +777,11 @@ class FloodMapApp {
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
-            cause: document.getElementById('cause-filter').value
+            cause: document.getElementById('cause-filter').value,
+            yearMin: document.getElementById('year-min').value ? parseInt(document.getElementById('year-min').value) : null,
+            yearMax: document.getElementById('year-max').value ? parseInt(document.getElementById('year-max').value) : null
         };
-        
+
         // Count active filters
         let activeCount = 0;
         Object.keys(filters).forEach(key => {
@@ -875,10 +904,13 @@ class FloodMapApp {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
         document.getElementById('cause-filter').value = '';
-        
+        document.getElementById('year-min').value = '';
+        document.getElementById('year-max').value = '';
+        document.getElementById('year-range-display').textContent = '-';
+
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
-        
+
         this.updateFilterIndicator(0);
         this.applyFilters();
     }
@@ -988,24 +1020,7 @@ class FloodMapApp {
         return text != null ? String(text).replace(/[&<>"']/g, m => map[m]) : '';
     }
     
-    // Add ruler/measurement control to the map
-    addRulerControl() {
-        // Check if leaflet-measure is available
-        if (typeof L.Control.Measure !== 'undefined') {
-            const measureControl = new L.Control.Measure({
-                position: 'topleft',
-                primaryLengthUnit: 'kilometers',
-                secondaryLengthUnit: 'meters',
-                primaryAreaUnit: 'sqkilometers',
-                secondaryAreaUnit: 'hectares',
-                activeColor: '#0066ff',
-                completedColor: '#000000'
-            });
-            measureControl.addTo(this.map);
-        } else {
-            console.warn('Leaflet Measure plugin not loaded, ruler functionality unavailable');
-        }
-    }
+
     
     // Add north arrow to the map
     addNorthArrow() {
