@@ -167,13 +167,6 @@ class FloodMapApp {
             }
         };
 
-        // Update year range display
-        const updateYearRangeDisplay = () => {
-            const min = yearFromFilter.value || '-';
-            const max = yearToFilter.value || '-';
-            yearRangeDisplay.textContent = `${min} to ${max}`;
-        };
-
         // Add change listeners with debouncing
         yearFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
@@ -192,13 +185,13 @@ class FloodMapApp {
 
         // Year range input listeners
         yearFromFilter.addEventListener('change', () => {
-            updateYearRangeDisplay();
+            this.updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
         yearToFilter.addEventListener('change', () => {
-            updateYearRangeDisplay();
+            this.updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -324,7 +317,19 @@ class FloodMapApp {
             });
         }
     }
-    
+
+    updateYearRangeDisplay() {
+        const yearFromFilter = document.getElementById('year-from-filter');
+        const yearToFilter = document.getElementById('year-to-filter');
+        const yearRangeDisplay = document.getElementById('year-range-display');
+
+        if (yearFromFilter && yearToFilter && yearRangeDisplay) {
+            const min = yearFromFilter.value || '-';
+            const max = yearToFilter.value || '-';
+            yearRangeDisplay.textContent = `${min} to ${max}`;
+        }
+    }
+
     async loadFilterOptions(selectedFilters = {}) {
         console.log('Loading filter options with filters:', selectedFilters);
         
@@ -542,7 +547,7 @@ class FloodMapApp {
         });
 
         // Update year range display after populating
-        updateYearRangeDisplay();
+        this.updateYearRangeDisplay();
 
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
