@@ -410,13 +410,15 @@ h6 { font-size: 0.75rem; }
 /* Year Range Filter Styles */
 .year-range-inputs {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
     gap: 0.5rem;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
 .year-input {
-    flex: 1;
+    flex: 1 1 45%;
     padding: 0.875rem 1rem;
     background: var(--background-primary);
     border: none;
@@ -444,9 +446,12 @@ h6 { font-size: 0.75rem; }
 }
 
 .year-separator {
+    width: 100%;
+    text-align: center;
     color: var(--text-secondary);
     font-weight: 500;
-    padding: 0 0.25rem;
+    padding: 0.5rem 0;
+    display: block;
 }
 
 .year-range-display {
