@@ -168,6 +168,17 @@ class FloodMapApp {
 
         // Add change listeners with debouncing
         yearFilter.addEventListener('change', () => {
+            // Mutual exclusivity: clear and disable year range filters when specific year is selected
+            if (yearFilter.value) {
+                yearFromFilter.value = '';
+                yearToFilter.value = '';
+                yearFromFilter.disabled = true;
+                yearToFilter.disabled = true;
+            } else {
+                // Re-enable year range filters if specific year is cleared
+                yearFromFilter.disabled = false;
+                yearToFilter.disabled = false;
+            }
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -184,11 +195,53 @@ class FloodMapApp {
 
         // Year range input listeners
         yearFromFilter.addEventListener('change', () => {
+            // Mutual exclusivity: clear and disable specific year filter when year range is selected
+            if (yearFromFilter.value || yearToFilter.value) {
+                yearFilter.value = '';
+                yearFilter.disabled = true;
+            } else if (!yearFromFilter.value && !yearToFilter.value) {
+                // Re-enable specific year filter if both range filters are cleared
+                yearFilter.disabled = false;
+            }
+            // Validation: check if from > to
+            if (yearFromFilter.value && yearToFilter.value) {
+                const fromYear = parseInt(yearFromFilter.value);
+                const toYear = parseInt(yearToFilter.value);
+                if (fromYear > toYear) {
+                    this.showFilterError('From Year must be less than or equal to To Year');
+                    return; // Prevent filter change
+                } else {
+                    this.hideFilterError();
+                }
+            } else {
+                this.hideFilterError();
+            }
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
         yearToFilter.addEventListener('change', () => {
+            // Mutual exclusivity: clear and disable specific year filter when year range is selected
+            if (yearFromFilter.value || yearToFilter.value) {
+                yearFilter.value = '';
+                yearFilter.disabled = true;
+            } else if (!yearFromFilter.value && !yearToFilter.value) {
+                // Re-enable specific year filter if both range filters are cleared
+                yearFilter.disabled = false;
+            }
+            // Validation: check if from > to
+            if (yearFromFilter.value && yearToFilter.value) {
+                const fromYear = parseInt(yearFromFilter.value);
+                const toYear = parseInt(yearToFilter.value);
+                if (fromYear > toYear) {
+                    this.showFilterError('From Year must be less than or equal to To Year');
+                    return; // Prevent filter change
+                } else {
+                    this.hideFilterError();
+                }
+            } else {
+                this.hideFilterError();
+            }
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -979,7 +1032,11 @@ class FloodMapApp {
         document.getElementById('cause-filter').value = '';
         document.getElementById('year-from-filter').value = '';
         document.getElementById('year-to-filter').value = '';
-        document.getElementById('year-range-display').textContent = '-';
+
+        // Re-enable all year filters after clearing
+        document.getElementById('year-filter').disabled = false;
+        document.getElementById('year-from-filter').disabled = false;
+        document.getElementById('year-to-filter').disabled = false;
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
