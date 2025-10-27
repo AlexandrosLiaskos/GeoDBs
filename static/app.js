@@ -141,7 +141,6 @@ class FloodMapApp {
         const causeFilter = document.getElementById('cause-filter');
         const yearFromFilter = document.getElementById('year-from-filter');
         const yearToFilter = document.getElementById('year-to-filter');
-        const yearRangeDisplay = document.getElementById('year-range-display');
 
         // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
@@ -185,13 +184,11 @@ class FloodMapApp {
 
         // Year range input listeners
         yearFromFilter.addEventListener('change', () => {
-            this.updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
         yearToFilter.addEventListener('change', () => {
-            this.updateYearRangeDisplay();
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -318,17 +315,7 @@ class FloodMapApp {
         }
     }
 
-    updateYearRangeDisplay() {
-        const yearFromFilter = document.getElementById('year-from-filter');
-        const yearToFilter = document.getElementById('year-to-filter');
-        const yearRangeDisplay = document.getElementById('year-range-display');
 
-        if (yearFromFilter && yearToFilter && yearRangeDisplay) {
-            const min = yearFromFilter.value || '-';
-            const max = yearToFilter.value || '-';
-            yearRangeDisplay.textContent = `${min} to ${max}`;
-        }
-    }
 
     async loadFilterOptions(selectedFilters = {}) {
         console.log('Loading filter options with filters:', selectedFilters);
@@ -545,9 +532,6 @@ class FloodMapApp {
             option.textContent = year;
             yearToSelect.appendChild(option);
         });
-
-        // Update year range display after populating
-        this.updateYearRangeDisplay();
 
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
