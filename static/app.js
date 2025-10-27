@@ -27,7 +27,7 @@ class FloodMapApp {
         this.initEventListeners();
         await this.checkDatabaseConnection();
         await this.loadFilterOptions();
-        await this.loadStats();
+        await this.loadStats({});
         await this.loadFloodData();
     }
     
@@ -617,24 +617,42 @@ class FloodMapApp {
         }
     }
     
-    async loadStats() {
+    async loadStats(filters = {}) {
         try {
             // Total count
-            const { count: totalCount, error: totalError } = await window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
+            let totalQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
+            if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
+            if (filters.yearMin) totalQuery = totalQuery.gte('year', filters.yearMin);
+            if (filters.yearMax) totalQuery = totalQuery.lte('year', filters.yearMax);
+            if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
+            if (filters.cause) totalQuery = totalQuery.eq('cause_of_flood', filters.cause);
+            const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
             
             // Min year
-            const { data: minData, error: minError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
+            let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
+            if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
+            if (filters.cause) minQuery = minQuery.eq('cause_of_flood', filters.cause);
+            const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
-            const minYear = minData[0]?.year;
+            let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
             
             // Max year
-            const { data: maxData, error: maxError } = await window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
+            let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
+            if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
+            if (filters.cause) maxQuery = maxQuery.eq('cause_of_flood', filters.cause);
+            const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
-            const maxYear = maxData[0]?.year;
+            let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
             
             // Events with casualties
-            const { count: casualtiesCount, error: casualtiesError } = await window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
+            if (filters.yearMin) casualtiesQuery = casualtiesQuery.gte('year', filters.yearMin);
+            if (filters.yearMax) casualtiesQuery = casualtiesQuery.lte('year', filters.yearMax);
+            if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
+            if (filters.cause) casualtiesQuery = casualtiesQuery.eq('cause_of_flood', filters.cause);
+            const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
             
             const stats = {
@@ -644,8 +662,13 @@ class FloodMapApp {
             };
             
             document.getElementById('total-events').textContent = stats.total_events.toLocaleString();
-            document.getElementById('year-range').textContent = 
-                `${stats.year_range.min} - ${stats.year_range.max}`;
+            let yearRangeText;
+            if (minYear === 'N/A' && maxYear === 'N/A') {
+                yearRangeText = 'No data';
+            } else {
+                yearRangeText = `${stats.year_range.min} - ${stats.year_range.max}`;
+            }
+            document.getElementById('year-range').textContent = yearRangeText;
             document.getElementById('events-casualties').textContent = 
                 stats.events_with_casualties.toLocaleString();
         } catch (error) {
@@ -899,7 +922,7 @@ class FloodMapApp {
         document.body.classList.add('modal-open');
     }
     
-    applyFilters() {
+    async applyFilters() {
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
@@ -931,7 +954,8 @@ class FloodMapApp {
             }
         }
         
-        this.loadFloodData(filters);
+        await this.loadFloodData(filters);
+        await this.loadStats(filters);
     }
     
     updateFilterIndicator(count) {
