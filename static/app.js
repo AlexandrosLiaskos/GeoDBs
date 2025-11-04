@@ -139,8 +139,6 @@ class FloodMapApp {
         const yearFilter = document.getElementById('year-filter');
         const locationFilter = document.getElementById('location-filter');
         const causeFilter = document.getElementById('cause-filter');
-        const yearFromFilter = document.getElementById('year-from-filter');
-        const yearToFilter = document.getElementById('year-to-filter');
 
         // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
@@ -151,9 +149,7 @@ class FloodMapApp {
             const selectedFilters = {
                 year: yearFilter.value,
                 location: locationFilter.value,
-                cause: causeFilter.value,
-                yearMin: yearFromFilter.value ? parseInt(yearFromFilter.value) : null,
-                yearMax: yearToFilter.value ? parseInt(yearToFilter.value) : null
+                cause: causeFilter.value
             };
 
             try {
@@ -168,17 +164,6 @@ class FloodMapApp {
 
         // Add change listeners with debouncing
         yearFilter.addEventListener('change', () => {
-            // Mutual exclusivity: clear and disable year range filters when specific year is selected
-            if (yearFilter.value) {
-                yearFromFilter.value = '';
-                yearToFilter.value = '';
-                yearFromFilter.disabled = true;
-                yearToFilter.disabled = true;
-            } else {
-                // Re-enable year range filters if specific year is cleared
-                yearFromFilter.disabled = false;
-                yearToFilter.disabled = false;
-            }
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -191,63 +176,6 @@ class FloodMapApp {
         causeFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-
-        // Year range input listeners
-        yearFromFilter.addEventListener('change', () => {
-            // Mutual exclusivity: clear and disable specific year filter when year range is selected
-            if (yearFromFilter.value || yearToFilter.value) {
-                yearFilter.value = '';
-                yearFilter.disabled = true;
-            } else if (!yearFromFilter.value && !yearToFilter.value) {
-                // Re-enable specific year filter if both range filters are cleared
-                yearFilter.disabled = false;
-            }
-            // Validation: check if from > to
-            if (yearFromFilter.value && yearToFilter.value) {
-                const fromYear = parseInt(yearFromFilter.value);
-                const toYear = parseInt(yearToFilter.value);
-                if (fromYear > toYear) {
-                    this.showFilterError('From Year must be less than or equal to To Year');
-                    return; // Prevent filter change
-                } else {
-                    this.hideFilterError();
-                    clearTimeout(this.filterUpdateTimer);
-                    this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-                }
-            } else {
-                this.hideFilterError();
-                clearTimeout(this.filterUpdateTimer);
-                this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-            }
-        });
-
-        yearToFilter.addEventListener('change', () => {
-            // Mutual exclusivity: clear and disable specific year filter when year range is selected
-            if (yearFromFilter.value || yearToFilter.value) {
-                yearFilter.value = '';
-                yearFilter.disabled = true;
-            } else if (!yearFromFilter.value && !yearToFilter.value) {
-                // Re-enable specific year filter if both range filters are cleared
-                yearFilter.disabled = false;
-            }
-            // Validation: check if from > to
-            if (yearFromFilter.value && yearToFilter.value) {
-                const fromYear = parseInt(yearFromFilter.value);
-                const toYear = parseInt(yearToFilter.value);
-                if (fromYear > toYear) {
-                    this.showFilterError('From Year must be less than or equal to To Year');
-                    return; // Prevent filter change
-                } else {
-                    this.hideFilterError();
-                    clearTimeout(this.filterUpdateTimer);
-                    this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-                }
-            } else {
-                this.hideFilterError();
-                clearTimeout(this.filterUpdateTimer);
-                this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-            }
         });
         
         document.getElementById('clear-filters').addEventListener('click', () => {
@@ -566,30 +494,6 @@ class FloodMapApp {
         console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
         console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
 
-        // Clear and repopulate year range filters
-        const yearFromSelect = document.getElementById('year-from-filter');
-        const yearToSelect = document.getElementById('year-to-filter');
-
-        // Clear and repopulate year-from-filter
-        const yearFromOptions = yearFromSelect.querySelectorAll('option:not(:first-child)');
-        yearFromOptions.forEach(opt => opt.remove());
-        this.filterOptions.years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            yearFromSelect.appendChild(option);
-        });
-
-        // Clear and repopulate year-to-filter
-        const yearToOptions = yearToSelect.querySelectorAll('option:not(:first-child)');
-        yearToOptions.forEach(opt => opt.remove());
-        this.filterOptions.years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            yearToSelect.appendChild(option);
-        });
-
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
         locationOptions.forEach(opt => opt.remove());
@@ -626,8 +530,6 @@ class FloodMapApp {
             // Total count
             let totalQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
-            if (filters.yearMin) totalQuery = totalQuery.gte('year', filters.yearMin);
-            if (filters.yearMax) totalQuery = totalQuery.lte('year', filters.yearMax);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
             if (filters.cause) totalQuery = totalQuery.eq('cause_of_flood', filters.cause);
             const { count: totalCount, error: totalError } = await totalQuery;
@@ -652,8 +554,6 @@ class FloodMapApp {
             // Events with casualties
             let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
-            if (filters.yearMin) casualtiesQuery = casualtiesQuery.gte('year', filters.yearMin);
-            if (filters.yearMax) casualtiesQuery = casualtiesQuery.lte('year', filters.yearMax);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
             if (filters.cause) casualtiesQuery = casualtiesQuery.eq('cause_of_flood', filters.cause);
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
@@ -693,8 +593,6 @@ class FloodMapApp {
             let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
 
             if (filters.year) query = query.eq('year', filters.year);
-            if (filters.yearMin) query = query.gte('year', filters.yearMin);
-            if (filters.yearMax) query = query.lte('year', filters.yearMax);
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.cause) query = query.eq('cause_of_flood', filters.cause);
             
@@ -930,27 +828,16 @@ class FloodMapApp {
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
-            cause: document.getElementById('cause-filter').value,
-            yearMin: document.getElementById('year-from-filter').value ? parseInt(document.getElementById('year-from-filter').value) : null,
-            yearMax: document.getElementById('year-to-filter').value ? parseInt(document.getElementById('year-to-filter').value) : null
+            cause: document.getElementById('cause-filter').value
         };
 
         // Count active filters
         let activeCount = 0;
-        let yearRangeCounted = false;
         Object.keys(filters).forEach(key => {
             if (!filters[key]) {
                 delete filters[key];
             } else {
-                // Count yearMin and yearMax as a single year range filter
-                if (key === 'yearMin' || key === 'yearMax') {
-                    if (!yearRangeCounted) {
-                        activeCount++;
-                        yearRangeCounted = true;
-                    }
-                } else {
-                    activeCount++;
-                }
+                activeCount++;
             }
         });
         
@@ -1067,13 +954,6 @@ class FloodMapApp {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
         document.getElementById('cause-filter').value = '';
-        document.getElementById('year-from-filter').value = '';
-        document.getElementById('year-to-filter').value = '';
-
-        // Re-enable all year filters after clearing
-        document.getElementById('year-filter').disabled = false;
-        document.getElementById('year-from-filter').disabled = false;
-        document.getElementById('year-to-filter').disabled = false;
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});

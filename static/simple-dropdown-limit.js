@@ -8,7 +8,7 @@
     const config = {
         defaultSize: 6,
         debounceDelay: 150,
-        excludeSelectors: ['#year-filter', '#location-filter', '#cause-filter', '#year-from-filter', '#year-to-filter'], // Selectors to exclude from limiting
+        excludeSelectors: ['#year-filter', '#location-filter', '#cause-filter'], // Selectors to exclude from limiting
     };
     
     // Cache for processed selects to avoid redundant operations
