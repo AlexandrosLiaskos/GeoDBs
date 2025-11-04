@@ -212,12 +212,14 @@ class FloodMapApp {
                     return; // Prevent filter change
                 } else {
                     this.hideFilterError();
+                    clearTimeout(this.filterUpdateTimer);
+                    this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
                 }
             } else {
                 this.hideFilterError();
+                clearTimeout(this.filterUpdateTimer);
+                this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
             }
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
         yearToFilter.addEventListener('change', () => {
@@ -238,12 +240,14 @@ class FloodMapApp {
                     return; // Prevent filter change
                 } else {
                     this.hideFilterError();
+                    clearTimeout(this.filterUpdateTimer);
+                    this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
                 }
             } else {
                 this.hideFilterError();
+                clearTimeout(this.filterUpdateTimer);
+                this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
             }
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
         
         document.getElementById('clear-filters').addEventListener('click', () => {
@@ -933,11 +937,20 @@ class FloodMapApp {
 
         // Count active filters
         let activeCount = 0;
+        let yearRangeCounted = false;
         Object.keys(filters).forEach(key => {
             if (!filters[key]) {
                 delete filters[key];
             } else {
-                activeCount++;
+                // Count yearMin and yearMax as a single year range filter
+                if (key === 'yearMin' || key === 'yearMax') {
+                    if (!yearRangeCounted) {
+                        activeCount++;
+                        yearRangeCounted = true;
+                    }
+                } else {
+                    activeCount++;
+                }
             }
         });
         
