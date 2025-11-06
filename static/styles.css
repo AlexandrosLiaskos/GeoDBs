@@ -192,6 +192,30 @@ h6 { font-size: 0.75rem; }
     transform: translateY(-1px);
 }
 
+.nav-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-radius: 0;
+    outline: none;
+    text-decoration: none;
+}
+
+.nav-link-icon:hover {
+    background: transparent;
+    transform: translateY(-2px);
+}
+
+.nav-link-icon:hover .nav-icon {
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,0.3));
+}
+
 .nav-link:hover {
     background: var(--primary-color);
     color: var(--text-inverse);
