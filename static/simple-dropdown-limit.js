@@ -2,7 +2,7 @@
 (function() {
     'use strict';
     
-    console.log('🔧 Initializing dropdown limiter...');
+    if (window.DEBUG_MODE) console.log('🔧 Initializing dropdown limiter...');
     
     // Configuration
     const config = {
@@ -23,14 +23,14 @@
      */
     function limitDropdowns(selectId = null) {
         try {
-            console.log('📋 Limiting dropdowns...', selectId ? `(specific: ${selectId})` : '(all)');
+            if (window.DEBUG_MODE) console.log('📋 Limiting dropdowns...', selectId ? `(specific: ${selectId})` : '(all)');
             
             let selects;
             if (selectId) {
                 // Target specific select
                 const select = document.getElementById(selectId);
                 if (!select) {
-                    console.warn(`⚠️ Select element with ID "${selectId}" not found`);
+                    if (window.DEBUG_MODE) console.warn(`⚠️ Select element with ID "${selectId}" not found`);
                     return;
                 }
                 selects = [select];
@@ -40,11 +40,11 @@
             }
             
             if (selects.length === 0) {
-                console.warn('⚠️ No select elements found to limit');
+                if (window.DEBUG_MODE) console.warn('⚠️ No select elements found to limit');
                 return;
             }
             
-            console.log(`Found ${selects.length} select element(s) to process`);
+            if (window.DEBUG_MODE) console.log(`Found ${selects.length} select element(s) to process`);
             
             let limitedCount = 0;
             
@@ -56,7 +56,7 @@
                     );
                     
                     if (shouldExclude) {
-                        console.log(`⏭️ Skipping excluded select: ${select.id || 'unnamed'}`);
+                        if (window.DEBUG_MODE) console.log(`⏭️ Skipping excluded select: ${select.id || 'unnamed'}`);
                         return;
                     }
                     
@@ -73,7 +73,7 @@
                         if (currentSize === sizeLimit && select.style.overflow === 'auto') {
                             // Already limited correctly, skip
                             if (!processedSelects.has(select)) {
-                                console.log(`✓ Select already limited: ${select.id || 'unnamed'} (${select.options.length} options, size: ${sizeLimit})`);
+                                if (window.DEBUG_MODE) console.log(`✓ Select already limited: ${select.id || 'unnamed'} (${select.options.length} options, size: ${sizeLimit})`);
                                 processedSelects.add(select);
                             }
                             return;
@@ -97,21 +97,23 @@
                         processedSelects.add(select);
                         limitedCount++;
                         
-                        console.log(`✓ Limited dropdown: ${select.id || 'unnamed'} with ${select.options.length} options (size: ${sizeLimit})`);
+                        if (window.DEBUG_MODE) console.log(`✓ Limited dropdown: ${select.id || 'unnamed'} with ${select.options.length} options (size: ${sizeLimit})`);
                     }
                 } catch (error) {
-                    console.error(`❌ Error processing select ${select.id || 'unnamed'}:`, error);
+                    if (window.DEBUG_MODE) console.error(`❌ Error processing select ${select.id || 'unnamed'}:`, error);
                 }
             });
             
-            if (limitedCount > 0) {
-                console.log(`✅ Successfully limited ${limitedCount} dropdown(s)`);
-            } else {
-                console.log('ℹ️ No dropdowns needed limiting');
+            if (window.DEBUG_MODE) {
+                if (limitedCount > 0) {
+                    console.log(`✅ Successfully limited ${limitedCount} dropdown(s)`);
+                } else {
+                    console.log('ℹ️ No dropdowns needed limiting');
+                }
             }
             
         } catch (error) {
-            console.error('❌ Error in limitDropdowns:', error);
+            if (window.DEBUG_MODE) console.error('❌ Error in limitDropdowns:', error);
         }
     }
     
@@ -130,25 +132,25 @@
      * @param {string} selectId - The ID of the select element to refresh
      */
     function refreshDropdown(selectId) {
-        console.log(`🔄 Refreshing dropdown: ${selectId}`);
+        if (window.DEBUG_MODE) console.log(`🔄 Refreshing dropdown: ${selectId}`);
         const select = document.getElementById(selectId);
         if (select) {
             // Remove from processed cache to force re-processing
             processedSelects.delete(select);
             limitDropdowns(selectId);
         } else {
-            console.warn(`⚠️ Cannot refresh: select "${selectId}" not found`);
+            if (window.DEBUG_MODE) console.warn(`⚠️ Cannot refresh: select "${selectId}" not found`);
         }
     }
     
     // Initialize on page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('📄 DOM loaded, applying dropdown limits...');
+            if (window.DEBUG_MODE) console.log('📄 DOM loaded, applying dropdown limits...');
             limitDropdowns();
         });
     } else {
-        console.log('📄 DOM already loaded, applying dropdown limits...');
+        if (window.DEBUG_MODE) console.log('📄 DOM already loaded, applying dropdown limits...');
         limitDropdowns();
     }
     
@@ -172,7 +174,7 @@
         });
         
         if (shouldReprocess) {
-            console.log('🔄 DOM mutation detected, re-processing dropdowns...');
+            if (window.DEBUG_MODE) console.log('🔄 DOM mutation detected, re-processing dropdowns...');
             debouncedLimitDropdowns();
         }
     });
@@ -183,7 +185,7 @@
             childList: true,
             subtree: true
         });
-        console.log('👁️ MutationObserver active, watching for dropdown changes');
+        if (window.DEBUG_MODE) console.log('👁️ MutationObserver active, watching for dropdown changes');
     } else {
         // If body isn't ready, wait for it
         document.addEventListener('DOMContentLoaded', () => {
@@ -191,39 +193,15 @@
                 childList: true,
                 subtree: true
             });
-            console.log('👁️ MutationObserver active, watching for dropdown changes');
+            if (window.DEBUG_MODE) console.log('👁️ MutationObserver active, watching for dropdown changes');
         });
     }
     
-    // Run again after delays to catch dynamically loaded content
+    // Run single delayed check to catch dynamically loaded content
     setTimeout(() => {
-        console.log('⏱️ Running delayed dropdown check (500ms)...');
-        limitDropdowns();
-    }, 500);
-    
-    setTimeout(() => {
-        console.log('⏱️ Running delayed dropdown check (1000ms)...');
-        limitDropdowns();
+        if (window.DEBUG_MODE) console.log('⏱️ Running delayed dropdown check (1000ms)...');
+        debouncedLimitDropdowns();
     }, 1000);
-    
-    setTimeout(() => {
-        console.log('⏱️ Running delayed dropdown check (2000ms)...');
-        limitDropdowns();
-    }, 2000);
-    
-    // Monitor fetch calls to re-process after AJAX loads
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-        return originalFetch.apply(this, args).then(response => {
-            // After any fetch completes, check dropdowns again (debounced)
-            console.log('🌐 Fetch completed, scheduling dropdown check...');
-            debouncedLimitDropdowns();
-            return response;
-        }).catch(error => {
-            console.error('❌ Fetch error:', error);
-            throw error;
-        });
-    };
     
     // Export functions globally for use by other scripts
     window.limitDropdowns = limitDropdowns;
@@ -232,7 +210,9 @@
     // Export configuration for external modification if needed
     window.dropdownLimiterConfig = config;
     
-    console.log('✅ Dropdown limiter initialized successfully');
-    console.log('💡 Usage: Call window.limitDropdowns() to re-process all dropdowns');
-    console.log('💡 Usage: Call window.refreshDropdown("select-id") to refresh a specific dropdown');
+    if (window.DEBUG_MODE) {
+        console.log('✅ Dropdown limiter initialized successfully');
+        console.log('💡 Usage: Call window.limitDropdowns() to re-process all dropdowns');
+        console.log('💡 Usage: Call window.refreshDropdown("select-id") to refresh a specific dropdown');
+    }
 })();

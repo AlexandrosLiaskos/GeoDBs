@@ -301,7 +301,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
 
 
     async loadFilterOptions(selectedFilters = {}) {
-        console.log('Loading filter options with filters:', selectedFilters);
+        if (window.DEBUG_MODE) console.log('Loading filter options with filters:', selectedFilters);
         
         // Check if Supabase client exists
         if (!window.supabaseClient) {
@@ -331,6 +331,11 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
                 if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
+                if (selectedFilters.casualties === 'with') {
+                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
+                } else if (selectedFilters.casualties === 'without') {
+                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 allYearsData.push(...batchData);
@@ -357,9 +362,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
                 if (selectedFilters.casualties === 'with') {
-                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
                 } else if (selectedFilters.casualties === 'without') {
-                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
                 }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
@@ -384,9 +389,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
                 if (selectedFilters.casualties === 'with') {
-                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
                 } else if (selectedFilters.casualties === 'without') {
-                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
                 }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
@@ -422,7 +427,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             console.error('Current filter state:', selectedFilters);
             
             // Restore opacity and hide loading on error
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
             selects.forEach(s => s.style.opacity = '1');
             this.showFilterLoading(false);
             
@@ -470,14 +475,16 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         // console.log('Populating dropdowns with:', this.filterOptions);
         
         // Validate filter options
-        if (!this.filterOptions.years || this.filterOptions.years.length === 0) {
-            console.warn('⚠️ No years available - check database connection');
-        }
-        if (!this.filterOptions.locations || this.filterOptions.locations.length === 0) {
-            console.warn('⚠️ No locations available - check database connection');
-        }
-        if (!this.filterOptions.causes || this.filterOptions.causes.length === 0) {
-            console.warn('⚠️ No causes available - check database connection');
+        if (window.DEBUG_MODE) {
+            if (!this.filterOptions.years || this.filterOptions.years.length === 0) {
+                console.warn('⚠️ No years available - check database connection');
+            }
+            if (!this.filterOptions.locations || this.filterOptions.locations.length === 0) {
+                console.warn('⚠️ No locations available - check database connection');
+            }
+            if (!this.filterOptions.causes || this.filterOptions.causes.length === 0) {
+                console.warn('⚠️ No causes available - check database connection');
+            }
         }
         
         // Store current selections
@@ -561,9 +568,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
             if (filters.cause) totalQuery = totalQuery.eq('cause_of_flood', filters.cause);
             if (filters.casualties === 'with') {
-                totalQuery = totalQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                totalQuery = totalQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             } else if (filters.casualties === 'without') {
-                totalQuery = totalQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                totalQuery = totalQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
@@ -573,9 +580,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
             if (filters.cause) minQuery = minQuery.eq('cause_of_flood', filters.cause);
             if (filters.casualties === 'with') {
-                minQuery = minQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                minQuery = minQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             } else if (filters.casualties === 'without') {
-                minQuery = minQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                minQuery = minQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
@@ -586,24 +593,20 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
             if (filters.cause) maxQuery = maxQuery.eq('cause_of_flood', filters.cause);
             if (filters.casualties === 'with') {
-                maxQuery = maxQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                maxQuery = maxQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             } else if (filters.casualties === 'without') {
-                maxQuery = maxQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                maxQuery = maxQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
             
             // Events with casualties
-            let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
             if (filters.cause) casualtiesQuery = casualtiesQuery.eq('cause_of_flood', filters.cause);
-            if (filters.casualties === 'with') {
-                casualtiesQuery = casualtiesQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
-            } else if (filters.casualties === 'without') {
-                casualtiesQuery = casualtiesQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
-            }
+            // Note: casualties filter is NOT applied here so this stat always shows events with casualties within other selected filters
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
             
@@ -644,9 +647,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.cause) query = query.eq('cause_of_flood', filters.cause);
             if (filters.casualties === 'with') {
-                query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             } else if (filters.casualties === 'without') {
-                query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             
             query = query.limit(2000);
@@ -658,7 +661,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 throw error;
             }
             
-            console.log(`Successfully loaded ${data.length} flood records`);
+            if (window.DEBUG_MODE) console.log(`Successfully loaded ${data.length} flood records`);
             this.currentData = data;
             this.updateMap();
             this.updateVisiblePointsCount();
