@@ -1,6 +1,6 @@
 {
-  "name": "Historic Floods WebGIS",
-  "short_name": "Historic Floods WebGIS",
+  "name": "Historic Floods",
+  "short_name": "Historic Floods",
   "description": "Interactive visualization of historic flood events in Greece (1886-2022)",
   "start_url": "./",
   "display": "standalone",
