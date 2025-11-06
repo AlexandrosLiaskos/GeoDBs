@@ -54,12 +54,8 @@
 
                     <div class="welcome-citation">
                         <div class="citation-primary">
-                            <p class="citation-label">How to cite this website:</p>
-                            <p>Liaskos, A., & Evelpidou, N. (2025). <em>Historic Floods WebGIS: An Interactive Map of Flood Events in Greece (1886-2022)</em>. National and Kapodistrian University of Athens, Department of Geology and Geoenvironment. Available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
-                        </div>
-                        <div class="citation-secondary">
-                            <p class="citation-label">Data source:</p>
-                            <p>Based on the flood database published in: Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a></p>
+                            <p class="citation-label">How to cite:</p>
+                            <p>Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a> WebGIS available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
                         </div>
                     </div>
 
@@ -155,6 +151,16 @@
                                 </select>
                             </div>
                             
+                            <!-- Casualties Filter -->
+                            <div class="filter-group">
+                                <label for="casualties-filter">Casualties:</label>
+                                <select id="casualties-filter">
+                                    <option value="">All Events</option>
+                                    <option value="with">With Casualties</option>
+                                    <option value="without">No Casualties</option>
+                                </select>
+                            </div>
+                            
                             <!-- Clear Filters Button -->
                             <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All Filters</button>
                         </div>
@@ -245,12 +251,8 @@
                 </div>
                 <div class="modal-body">
                     <div class="reference-item">
-                        <p class="citation-label">How to cite this website:</p>
-                        <p>Liaskos, A., & Evelpidou, N. (2025). <em>Historic Floods WebGIS: An Interactive Map of Flood Events in Greece (1886-2022)</em>. National and Kapodistrian University of Athens, Department of Geology and Geoenvironment. Available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
-                    </div>
-                    <div class="reference-item">
-                        <p class="citation-label">Data source:</p>
-                        <p>Based on the flood database published in: Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a></p>
+                        <p class="citation-label">How to cite:</p>
+                        <p>Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a> WebGIS available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
                     </div>
                 </div>
             </div>

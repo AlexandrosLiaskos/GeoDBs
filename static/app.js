@@ -136,23 +136,21 @@ class FloodMapApp {
         }
         
         // Filter controls with interactive filtering
-        const yearFilter = document.getElementById('year-filter');
-        const locationFilter = document.getElementById('location-filter');
-        const causeFilter = document.getElementById('cause-filter');
-
-        // Single handler for all filter changes to avoid redundancy
+const yearFilter = document.getElementById('year-filter');
+const locationFilter = document.getElementById('location-filter');
+const causeFilter = document.getElementById('cause-filter');
+const casualtiesFilter = document.getElementById('casualties-filter');        // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
             // Skip if we're already updating
             if (this.isUpdatingFilters) return;
             this.isUpdatingFilters = true;
 
-            const selectedFilters = {
-                year: yearFilter.value,
-                location: locationFilter.value,
-                cause: causeFilter.value
-            };
-
-            try {
+        const selectedFilters = {
+            year: yearFilter.value,
+            location: locationFilter.value,
+            cause: causeFilter.value,
+            casualties: casualtiesFilter.value
+        };            try {
                 // Update available options in other filters
                 await this.loadFilterOptions(selectedFilters);
                 // Apply the filter to the map
@@ -174,6 +172,11 @@ class FloodMapApp {
         });
 
         causeFilter.addEventListener('change', () => {
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
+        });
+
+        casualtiesFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -221,20 +224,15 @@ class FloodMapApp {
         const closeWelcomeModal = () => {
             if (welcomeModal) {
                 welcomeModal.classList.remove('active');
-                localStorage.setItem('hasVisitedBefore', 'true');
             }
         };
 
-        // Check if this is the first visit
+        // Show welcome modal on every visit
         if (welcomeModal) {
-            const hasVisited = localStorage.getItem('hasVisitedBefore');
-
-            if (!hasVisited) {
-                // Show welcome modal on first visit with a small delay
-                setTimeout(() => {
-                    welcomeModal.classList.add('active');
-                }, 300);
-            }
+            // Show welcome modal with a small delay
+            setTimeout(() => {
+                welcomeModal.classList.add('active');
+            }, 300);
 
             // Close button event listener
             if (closeWelcome) {
@@ -316,7 +314,7 @@ class FloodMapApp {
         
         try {
             // Show loading state on filter dropdowns
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
@@ -325,7 +323,7 @@ class FloodMapApp {
             // Years query with pagination to fetch all records despite Supabase's 1000-row limit
             // Supabase/PostgREST default max-rows limit is 1000. This can be increased in Supabase project settings under API > Settings > Max Rows.
             // Alternative solutions include pagination, RPC functions, or database views. Current implementation uses pagination to handle this limitation.
-            console.log('Querying years with pagination...');
+            // console.log('Querying years with pagination...');
             let allYearsData = [];
             let start = 0;
             const batchSize = 1000;
@@ -340,17 +338,17 @@ class FloodMapApp {
                 start += batchSize;
             }
             const yearsData = allYearsData;
-            if (yearsData.length >= 1000) console.warn('⚠️ Fetched 1000 or more records - Supabase row limit may be truncating results. Total DB records: 1992');
-            console.log('📊 Raw yearsData sample (first 10):', yearsData.slice(0, 10));
-            console.log('🔍 Type of first year value:', typeof yearsData[0]?.year, '| Value:', yearsData[0]?.year);
-            console.log('📈 Total year records fetched:', yearsData.length);
-            console.log('📅 Sample of 20 year values:', yearsData.slice(0, 20).map(d => d.year));
-            console.log('📊 Year range in raw data - Min:', Math.min(...yearsData.map(d => d.year)), 'Max:', Math.max(...yearsData.map(d => d.year)));
+            // if (yearsData.length >= 1000) console.warn('⚠️ Fetched 1000 or more records - Supabase row limit may be truncating results. Total DB records: 1992');
+            // console.log('📊 Raw yearsData sample (first 10):', yearsData.slice(0, 10));
+            // console.log('🔍 Type of first year value:', typeof yearsData[0]?.year, '| Value:', yearsData[0]?.year);
+            // console.log('📈 Total year records fetched:', yearsData.length);
+            // console.log('📅 Sample of 20 year values:', yearsData.slice(0, 20).map(d => d.year));
+            // console.log('📊 Year range in raw data - Min:', Math.min(...yearsData.map(d => d.year)), 'Max:', Math.max(...yearsData.map(d => d.year)));
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
-            console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
+            // console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
             // Locations query with pagination to fetch all records
-            console.log('Querying locations with pagination...');
+            // console.log('Querying locations with pagination...');
             let allLocationsData = [];
             start = 0;
             let locationBatches = 0;
@@ -358,21 +356,26 @@ class FloodMapApp {
                 let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
+                if (selectedFilters.casualties === 'with') {
+                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                } else if (selectedFilters.casualties === 'without') {
+                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 locationBatches++;
                 allLocationsData.push(...batchData);
-                console.log(`📦 Location batch ${locationBatches}: fetched ${batchData.length} records (total so far: ${allLocationsData.length})`);
+                // console.log(`📦 Location batch ${locationBatches}: fetched ${batchData.length} records (total so far: ${allLocationsData.length})`);
                 if (batchData.length < batchSize) break;
                 start += batchSize;
             }
             const locationsData = allLocationsData;
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             locations.splice(100);
-            console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
+            // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
             
             // Causes query with pagination to fetch all records
-            console.log('Querying causes with pagination...');
+            // console.log('Querying causes with pagination...');
             let allCausesData = [];
             start = 0;
             let causeBatches = 0;
@@ -380,19 +383,30 @@ class FloodMapApp {
                 let query = window.supabaseClient.from('floods').select('cause_of_flood').not('cause_of_flood', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                if (selectedFilters.casualties === 'with') {
+                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+                } else if (selectedFilters.casualties === 'without') {
+                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 causeBatches++;
                 allCausesData.push(...batchData);
-                console.log(`📦 Cause batch ${causeBatches}: fetched ${batchData.length} records (total so far: ${allCausesData.length})`);
+                // console.log(`📦 Cause batch ${causeBatches}: fetched ${batchData.length} records (total so far: ${allCausesData.length})`);
                 if (batchData.length < batchSize) break;
                 start += batchSize;
             }
             const causesData = allCausesData;
             const causes = this._getUniqueValuesWithCount(causesData, 'cause_of_flood');
-            console.log(`✅ Causes: Fetched ${causesData.length} total records in ${causeBatches} batch(es), found ${causes.length} unique causes`);
+            // console.log(`✅ Causes: Fetched ${causesData.length} total records in ${causeBatches} batch(es), found ${causes.length} unique causes`);
             
-            this.filterOptions = { years, locations, causes };
+            // Casualties filter options (categorical)
+            const casualties = [
+                { value: 'with', label: 'With Casualties' },
+                { value: 'without', label: 'No Casualties' }
+            ];
+            
+            this.filterOptions = { years, locations, causes, casualties };
             
             this.populateFilterDropdowns(selectedFilters);
             
@@ -442,18 +456,18 @@ class FloodMapApp {
             return String(a).localeCompare(String(b)); // Sort strings alphabetically
         });
 
-        console.log('🔧 _getUniqueValuesWithCount() processing field:', fieldName);
-        console.log('📊 First 20 sorted values:', sortedValues.slice(0, 20));
-        console.log('📊 Last 20 sorted values:', sortedValues.slice(-20));
-        console.log('🔍 Type of first sorted value:', typeof sortedValues[0], '| Value:', sortedValues[0]);
-        console.log('📈 Total unique values for', fieldName + ':', sortedValues.length);
-        if (fieldName === 'year') { console.log('📅 Year-specific debug - All years:', sortedValues); }
+        // console.log('🔧 _getUniqueValuesWithCount() processing field:', fieldName);
+        // console.log('📊 First 20 sorted values:', sortedValues.slice(0, 20));
+        // console.log('📊 Last 20 sorted values:', sortedValues.slice(-20));
+        // console.log('🔍 Type of first sorted value:', typeof sortedValues[0], '| Value:', sortedValues[0]);
+        // console.log('📈 Total unique values for', fieldName + ':', sortedValues.length);
+        // if (fieldName === 'year') { console.log('📅 Year-specific debug - All years:', sortedValues); }
 
         return sortedValues;
     }
     
     populateFilterDropdowns(selectedFilters = {}) {
-        console.log('Populating dropdowns with:', this.filterOptions);
+        // console.log('Populating dropdowns with:', this.filterOptions);
         
         // Validate filter options
         if (!this.filterOptions.years || this.filterOptions.years.length === 0) {
@@ -470,10 +484,12 @@ class FloodMapApp {
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
         const causeSelect = document.getElementById('cause-filter');
+        const casualtiesSelect = document.getElementById('casualties-filter');
         
         const currentYear = selectedFilters.year || yearSelect.value;
         const currentLocation = selectedFilters.location || locationSelect.value;
         const currentCause = selectedFilters.cause || causeSelect.value;
+        const currentCasualties = selectedFilters.casualties || casualtiesSelect.value;
         
         // Clear and repopulate year filter
         const yearOptions = yearSelect.querySelectorAll('option:not(:first-child)');
@@ -485,14 +501,14 @@ class FloodMapApp {
             if (year === currentYear) option.selected = true;
             yearSelect.appendChild(option);
         });
-        console.log(`Added ${this.filterOptions.years.length} year options`);
-        console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
-        console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
-        console.log('📅 All years in dropdown:', this.filterOptions.years);
-        console.log('🔍 Actual <option> elements in year dropdown:', yearSelect.querySelectorAll('option').length - 1);
-        console.log('🔍 Type of first year in filterOptions:', typeof this.filterOptions.years[0], '| Value:', this.filterOptions.years[0]);
-        console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
-        console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
+        // console.log(`Added ${this.filterOptions.years.length} year options`);
+        // console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
+        // console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
+        // console.log('📅 All years in dropdown:', this.filterOptions.years);
+        // console.log('🔍 Actual <option> elements in year dropdown:', yearSelect.querySelectorAll('option').length - 1);
+        // console.log('🔍 Type of first year in filterOptions:', typeof this.filterOptions.years[0], '| Value:', this.filterOptions.years[0]);
+        // console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
+        // console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
 
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
@@ -504,7 +520,7 @@ class FloodMapApp {
             if (location === currentLocation) option.selected = true;
             locationSelect.appendChild(option);
         });
-        console.log(`Added ${this.filterOptions.locations.length} location options`);
+        // console.log(`Added ${this.filterOptions.locations.length} location options`);
         
         // Clear and repopulate cause filter
         const causeOptions = causeSelect.querySelectorAll('option:not(:first-child)');
@@ -516,11 +532,23 @@ class FloodMapApp {
             if (cause === currentCause) option.selected = true;
             causeSelect.appendChild(option);
         });
-        console.log(`Added ${this.filterOptions.causes.length} cause options`);
+        // console.log(`Added ${this.filterOptions.causes.length} cause options`);
+        
+        // Clear and repopulate casualties filter
+        const casualtiesOptions = casualtiesSelect.querySelectorAll('option:not(:first-child)');
+        casualtiesOptions.forEach(opt => opt.remove());
+        this.filterOptions.casualties.forEach(casualty => {
+            const option = document.createElement('option');
+            option.value = casualty.value;
+            option.textContent = casualty.label;
+            if (casualty.value === currentCasualties) option.selected = true;
+            casualtiesSelect.appendChild(option);
+        });
+        // console.log(`Added ${this.filterOptions.casualties.length} casualties options`);
         
         // Re-apply the dropdown limiting after repopulating
         if (typeof limitDropdowns === 'function') {
-            console.log('Calling limitDropdowns()...');
+            // console.log('Calling limitDropdowns()...');
             setTimeout(limitDropdowns, 100);
         }
     }
@@ -532,6 +560,11 @@ class FloodMapApp {
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
             if (filters.cause) totalQuery = totalQuery.eq('cause_of_flood', filters.cause);
+            if (filters.casualties === 'with') {
+                totalQuery = totalQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            } else if (filters.casualties === 'without') {
+                totalQuery = totalQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+            }
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
             
@@ -539,6 +572,11 @@ class FloodMapApp {
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
             if (filters.cause) minQuery = minQuery.eq('cause_of_flood', filters.cause);
+            if (filters.casualties === 'with') {
+                minQuery = minQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            } else if (filters.casualties === 'without') {
+                minQuery = minQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+            }
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
             let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
@@ -547,6 +585,11 @@ class FloodMapApp {
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
             if (filters.cause) maxQuery = maxQuery.eq('cause_of_flood', filters.cause);
+            if (filters.casualties === 'with') {
+                maxQuery = maxQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            } else if (filters.casualties === 'without') {
+                maxQuery = maxQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+            }
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
@@ -556,6 +599,11 @@ class FloodMapApp {
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
             if (filters.cause) casualtiesQuery = casualtiesQuery.eq('cause_of_flood', filters.cause);
+            if (filters.casualties === 'with') {
+                casualtiesQuery = casualtiesQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            } else if (filters.casualties === 'without') {
+                casualtiesQuery = casualtiesQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+            }
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
             
@@ -587,7 +635,7 @@ class FloodMapApp {
         this.isLoading = true;
         
         try {
-            console.log('Loading flood data with filters:', filters);
+            // console.log('Loading flood data with filters:', filters);
             
             // Build query - include deaths_toll for tooltip
             let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
@@ -595,10 +643,15 @@ class FloodMapApp {
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.cause) query = query.eq('cause_of_flood', filters.cause);
+            if (filters.casualties === 'with') {
+                query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0');
+            } else if (filters.casualties === 'without') {
+                query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0');
+            }
             
             query = query.limit(2000);
             
-            console.log('Executing flood data query...');
+            // console.log('Executing flood data query...');
             const { data, error } = await query;
             if (error) {
                 console.error('Query failed:', error);
@@ -828,7 +881,8 @@ class FloodMapApp {
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
-            cause: document.getElementById('cause-filter').value
+            cause: document.getElementById('cause-filter').value,
+            casualties: document.getElementById('casualties-filter').value
         };
 
         // Count active filters
@@ -873,7 +927,7 @@ class FloodMapApp {
     
     
     async checkDatabaseConnection() {
-        console.log('🔍 Checking database connection...');
+        // console.log('🔍 Checking database connection...');
         
         if (!window.supabaseClient) {
             console.error('❌ Supabase client not initialized');
@@ -897,8 +951,8 @@ class FloodMapApp {
                 return false;
             }
             
-            console.log('✅ Database connection successful');
-            console.log(`📊 Database contains ${count} flood records`);
+            // console.log('✅ Database connection successful');
+            // console.log(`📊 Database contains ${count} flood records`);
             return true;
             
         } catch (error) {
@@ -937,14 +991,14 @@ class FloodMapApp {
     }
     
     addFilterErrorState() {
-        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
         selects.forEach(select => {
             select.classList.add('filter-error-state');
         });
     }
     
     disableFilterDropdowns() {
-        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter');
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
         selects.forEach(select => {
             select.disabled = true;
             select.classList.add('filter-error-state');
@@ -954,6 +1008,7 @@ class FloodMapApp {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
         document.getElementById('cause-filter').value = '';
+        document.getElementById('casualties-filter').value = '';
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
