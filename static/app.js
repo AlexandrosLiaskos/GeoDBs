@@ -481,15 +481,9 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             const option = document.createElement('option');
             option.value = year;
             option.textContent = year;
-            if (year === currentYear) option.selected = true;
+            if (String(year) === String(currentYear)) option.selected = true;
             yearSelect.appendChild(option);
         });
-        // Apply has-value class based on selection
-        if (currentYear) {
-            yearSelect.classList.add('has-value');
-        } else {
-            yearSelect.classList.remove('has-value');
-        }
         // console.log(`Added ${this.filterOptions.years.length} year options`);
         // console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
         // console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
@@ -509,12 +503,6 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (location === currentLocation) option.selected = true;
             locationSelect.appendChild(option);
         });
-        // Apply has-value class based on selection
-        if (currentLocation) {
-            locationSelect.classList.add('has-value');
-        } else {
-            locationSelect.classList.remove('has-value');
-        }
         // console.log(`Added ${this.filterOptions.locations.length} location options`);
         
         // Clear and repopulate deaths toll filter
@@ -528,12 +516,6 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (deathToll === currentDeathsToll) option.selected = true;
             deathsTollSelect.appendChild(option);
         });
-        // Apply has-value class based on selection
-        if (currentDeathsToll) {
-            deathsTollSelect.classList.add('has-value');
-        } else {
-            deathsTollSelect.classList.remove('has-value');
-        }
         // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
         
         // Re-apply the dropdown limiting after repopulating
@@ -905,14 +887,19 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         if (!toggleBtn) return;
         
         if (count > 0) {
-            // Show specific filter names on mobile
-            const filterNames = [];
-            if (filters.year) filterNames.push('Year');
-            if (filters.location) filterNames.push('Location');
-            if (filters.deathsToll) filterNames.push('Deaths');
-            
-            const filterText = filterNames.join(', ');
-            toggleBtn.textContent = `Filters: ${filterText}`;
+            // Show count only on very narrow screens (480px and below)
+            if (window.innerWidth <= 480) {
+                toggleBtn.textContent = `Filters (${count})`;
+            } else {
+                // Show specific filter names on wider mobile screens
+                const filterNames = [];
+                if (filters.year) filterNames.push('Year');
+                if (filters.location) filterNames.push('Location');
+                if (filters.deathsToll) filterNames.push('Deaths');
+                
+                const filterText = filterNames.join(', ');
+                toggleBtn.textContent = `Filters: ${filterText}`;
+            }
             toggleBtn.style.borderColor = 'var(--accent-blue)';
         } else {
             toggleBtn.textContent = 'Filters';

@@ -1916,9 +1916,18 @@ body::-webkit-scrollbar-thumb:hover {
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 200px;
+        max-width: 220px;
     }
-    
+}
+
+@media (max-width: 480px) {
+    /* Very narrow screens - show count only in filter toggle */
+    .mobile-toggle-btn {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 768px) {
     /* Keep navigation on left, title centered on mobile */
     .header-nav {
         position: relative;
