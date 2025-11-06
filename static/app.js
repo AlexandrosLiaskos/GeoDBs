@@ -323,11 +323,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             while (true) {
                 let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                if (selectedFilters.deathsToll === 'with') {
-                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-                } else if (selectedFilters.deathsToll === 'without') {
-                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-                }
+                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 allYearsData.push(...batchData);
@@ -352,11 +348,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             while (true) {
                 let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.deathsToll === 'with') {
-                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-                } else if (selectedFilters.deathsToll === 'without') {
-                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-                }
+                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 locationBatches++;
@@ -370,11 +362,26 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             locations.splice(100);
             // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
             
-            // Death Toll filter options (categorical)
-            const deathsToll = [
-                { value: 'with', label: 'With Deaths' },
-                { value: 'without', label: 'No Deaths' }
-            ];
+            // Death Toll query with pagination to fetch all records
+            // console.log('Querying death toll values with pagination...');
+            let allDeathsTollData = [];
+            start = 0;
+            let deathsTollBatches = 0;
+            while (true) {
+                let query = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ').range(start, start + batchSize - 1);
+                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
+                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                const { data: batchData, error } = await query;
+                if (error) throw error;
+                deathsTollBatches++;
+                allDeathsTollData.push(...batchData);
+                // console.log(`📦 Death toll batch ${deathsTollBatches}: fetched ${batchData.length} records (total so far: ${allDeathsTollData.length})`);
+                if (batchData.length < batchSize) break;
+                start += batchSize;
+            }
+            const deathsTollData = allDeathsTollData;
+            const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
+            // console.log(`✅ Death Toll: Fetched ${deathsTollData.length} total records in ${deathsTollBatches} batch(es), found ${deathsToll.length} unique values`);
             
             this.filterOptions = { years, locations, deathsToll };
             
@@ -419,6 +426,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         // Convert the Set to an array and sort it
         const sortedValues = Array.from(uniqueValues);
         sortedValues.sort((a, b) => {
+            // Special handling for deaths_toll field: numeric sorting in ascending order
+            if (fieldName === 'deaths_toll') {
+                const numA = parseFloat(String(a).trim()) || 0;
+                const numB = parseFloat(String(b).trim()) || 0;
+                return numA - numB; // Sort numerically in ascending order (0, 1, 2, 5, 10, etc.)
+            }
             // Ensure consistent sorting for strings and numbers
             if (typeof a === 'number' && typeof b === 'number') {
                 return b - a; // Sort numbers in descending order (e.g., years)
@@ -497,9 +510,10 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         deathsTollOptions.forEach(opt => opt.remove());
         this.filterOptions.deathsToll.forEach(deathToll => {
             const option = document.createElement('option');
-            option.value = deathToll.value;
-            option.textContent = deathToll.label;
-            if (deathToll.value === currentDeathsToll) option.selected = true;
+            option.value = deathToll;
+            // Display '0' as '0 (None)' for better UX
+            option.textContent = deathToll === '0' ? '0 (None)' : deathToll;
+            if (deathToll === currentDeathsToll) option.selected = true;
             deathsTollSelect.appendChild(option);
         });
         // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
@@ -517,22 +531,14 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let totalQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
-            if (filters.deathsToll === 'with') {
-                totalQuery = totalQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.deathsToll === 'without') {
-                totalQuery = totalQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-            }
+            if (filters.deathsToll) totalQuery = totalQuery.eq('deaths_toll', filters.deathsToll);
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
             
             // Min year
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
-            if (filters.deathsToll === 'with') {
-                minQuery = minQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.deathsToll === 'without') {
-                minQuery = minQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-            }
+            if (filters.deathsToll) minQuery = minQuery.eq('deaths_toll', filters.deathsToll);
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
             let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
@@ -540,11 +546,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             // Max year
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
-            if (filters.deathsToll === 'with') {
-                maxQuery = maxQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.deathsToll === 'without') {
-                maxQuery = maxQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-            }
+            if (filters.deathsToll) maxQuery = maxQuery.eq('deaths_toll', filters.deathsToll);
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
@@ -592,11 +594,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
 
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
-            if (filters.deathsToll === 'with') {
-                query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.deathsToll === 'without') {
-                query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-            }
+            if (filters.deathsToll) query = query.eq('deaths_toll', filters.deathsToll);
             
             query = query.limit(2000);
             
