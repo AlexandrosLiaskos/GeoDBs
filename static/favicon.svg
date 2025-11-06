@@ -1,19 +1,63 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
+    <!-- Gradients for house -->
+    <linearGradient id="houseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#5EEAC7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3DD5B0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="roofGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A6B7C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2D4854;stop-opacity:1" />
+    </linearGradient>
     <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#2E5C8A;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#B8D4DB;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8FB8C3;stop-opacity:1" />
     </linearGradient>
   </defs>
-  <!-- Water drop icon representing floods -->
-  <path d="M 50 10 C 50 10, 30 35, 30 55 C 30 68, 39 78, 50 78 C 61 78, 70 68, 70 55 C 70 35, 50 10, 50 10 Z" 
+  
+  <!-- House body (partially visible above water) -->
+  <rect x="30" y="30" width="40" height="35" fill="url(#houseGradient)" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  
+  <!-- Roof -->
+  <path d="M 25 30 L 50 12 L 75 30 Z" fill="url(#roofGradient)" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+  
+  <!-- Chimney -->
+  <rect x="60" y="15" width="8" height="12" fill="url(#roofGradient)" stroke="#000" stroke-width="2.5"/>
+  <rect x="58" y="15" width="12" height="4" rx="1" fill="#2D4854" stroke="#000" stroke-width="2.5"/>
+  
+  <!-- Window (circular) -->
+  <circle cx="50" cy="42" r="5" fill="#E8E8E8" stroke="#000" stroke-width="2.5"/>
+  
+  <!-- Door (darker, flooded) -->
+  <rect x="35" y="52" width="10" height="13" fill="#2D4854" stroke="#000" stroke-width="2.5"/>
+  
+  <!-- Window with panes (lighter, visible) -->
+  <rect x="57" y="52" width="10" height="10" fill="#FFFFFF" stroke="#000" stroke-width="2.5"/>
+  <line x1="62" y1="52" x2="62" y2="62" stroke="#000" stroke-width="2"/>
+  <line x1="57" y1="57" x2="67" y2="57" stroke="#000" stroke-width="2"/>
+  
+  <!-- Water waves (4 layers covering bottom of house) -->
+  <path d="M 0 55 Q 10 52, 20 55 T 40 55 T 60 55 T 80 55 T 100 55 L 100 100 L 0 100 Z" 
         fill="url(#waterGradient)" 
-        stroke="#1A3A5A" 
-        stroke-width="2"/>
-  <!-- Greece map outline (simplified) -->
-  <path d="M 35 85 L 40 82 L 43 85 L 47 83 L 50 86 L 54 84 L 58 87 L 62 85 L 65 88" 
+        stroke="#000" 
+        stroke-width="3"
+        stroke-linejoin="round"/>
+  
+  <path d="M 0 62 Q 10 59, 20 62 T 40 62 T 60 62 T 80 62 T 100 62" 
         fill="none" 
-        stroke="#1A3A5A" 
-        stroke-width="1.5"
+        stroke="#000" 
+        stroke-width="3"
+        stroke-linecap="round"/>
+  
+  <path d="M 0 69 Q 10 66, 20 69 T 40 69 T 60 69 T 80 69 T 100 69" 
+        fill="none" 
+        stroke="#000" 
+        stroke-width="3"
+        stroke-linecap="round"/>
+  
+  <path d="M 0 76 Q 10 73, 20 76 T 40 76 T 60 76 T 80 76 T 100 76" 
+        fill="none" 
+        stroke="#000" 
+        stroke-width="3"
         stroke-linecap="round"/>
 </svg>
