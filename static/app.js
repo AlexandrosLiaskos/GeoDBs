@@ -484,6 +484,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (year === currentYear) option.selected = true;
             yearSelect.appendChild(option);
         });
+        // Apply has-value class based on selection
+        if (currentYear) {
+            yearSelect.classList.add('has-value');
+        } else {
+            yearSelect.classList.remove('has-value');
+        }
         // console.log(`Added ${this.filterOptions.years.length} year options`);
         // console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
         // console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
@@ -503,6 +509,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (location === currentLocation) option.selected = true;
             locationSelect.appendChild(option);
         });
+        // Apply has-value class based on selection
+        if (currentLocation) {
+            locationSelect.classList.add('has-value');
+        } else {
+            locationSelect.classList.remove('has-value');
+        }
         // console.log(`Added ${this.filterOptions.locations.length} location options`);
         
         // Clear and repopulate deaths toll filter
@@ -516,6 +528,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (deathToll === currentDeathsToll) option.selected = true;
             deathsTollSelect.appendChild(option);
         });
+        // Apply has-value class based on selection
+        if (currentDeathsToll) {
+            deathsTollSelect.classList.add('has-value');
+        } else {
+            deathsTollSelect.classList.remove('has-value');
+        }
         // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
         
         // Re-apply the dropdown limiting after repopulating
@@ -831,8 +849,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             deathsToll: document.getElementById('deaths-toll-filter').value
         };
 
-        // Count active filters
+        // Count active filters and apply has-value classes
         let activeCount = 0;
+        const yearSelect = document.getElementById('year-filter');
+        const locationSelect = document.getElementById('location-filter');
+        const deathsTollSelect = document.getElementById('deaths-toll-filter');
+        
         Object.keys(filters).forEach(key => {
             if (!filters[key]) {
                 delete filters[key];
@@ -841,8 +863,28 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             }
         });
         
+        // Apply/remove has-value classes
+        if (filters.year) {
+            yearSelect.classList.add('has-value');
+        } else {
+            yearSelect.classList.remove('has-value');
+        }
+        if (filters.location) {
+            locationSelect.classList.add('has-value');
+        } else {
+            locationSelect.classList.remove('has-value');
+        }
+        if (filters.deathsToll) {
+            deathsTollSelect.classList.add('has-value');
+        } else {
+            deathsTollSelect.classList.remove('has-value');
+        }
+        
+        // Update active filters display
+        this.updateActiveFiltersDisplay(filters);
+        
         // Update mobile toggle to show filter count
-        this.updateFilterIndicator(activeCount);
+        this.updateFilterIndicator(activeCount, filters);
         
         // Close sidebar on mobile after applying filters
         if (window.innerWidth <= 768) {
@@ -858,12 +900,19 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         await this.loadStats(filters);
     }
     
-    updateFilterIndicator(count) {
+    updateFilterIndicator(count, filters = {}) {
         const toggleBtn = document.getElementById('mobile-filters-toggle');
         if (!toggleBtn) return;
         
         if (count > 0) {
-            toggleBtn.textContent = `Filters (${count})`;
+            // Show specific filter names on mobile
+            const filterNames = [];
+            if (filters.year) filterNames.push('Year');
+            if (filters.location) filterNames.push('Location');
+            if (filters.deathsToll) filterNames.push('Deaths');
+            
+            const filterText = filterNames.join(', ');
+            toggleBtn.textContent = `Filters: ${filterText}`;
             toggleBtn.style.borderColor = 'var(--accent-blue)';
         } else {
             toggleBtn.textContent = 'Filters';
@@ -951,15 +1000,127 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         });
     }
     async clearFilters() {
-        document.getElementById('year-filter').value = '';
-        document.getElementById('location-filter').value = '';
-        document.getElementById('deaths-toll-filter').value = '';
+        const yearSelect = document.getElementById('year-filter');
+        const locationSelect = document.getElementById('location-filter');
+        const deathsTollSelect = document.getElementById('deaths-toll-filter');
+        
+        yearSelect.value = '';
+        locationSelect.value = '';
+        deathsTollSelect.value = '';
+        
+        // Remove has-value classes
+        yearSelect.classList.remove('has-value');
+        locationSelect.classList.remove('has-value');
+        deathsTollSelect.classList.remove('has-value');
+        
+        // Hide active filters summary
+        const activeFiltersSummary = document.getElementById('active-filters-summary');
+        if (activeFiltersSummary) {
+            activeFiltersSummary.classList.add('hidden');
+        }
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
 
-        this.updateFilterIndicator(0);
+        this.updateFilterIndicator(0, {});
         this.applyFilters();
+    }
+    
+    updateActiveFiltersDisplay(filters) {
+        const activeFiltersSummary = document.getElementById('active-filters-summary');
+        const activeFiltersList = document.getElementById('active-filters-list');
+        
+        if (!activeFiltersSummary || !activeFiltersList) return;
+        
+        // Clear existing badges
+        activeFiltersList.innerHTML = '';
+        
+        // Create filter name mapping for display
+        const filterLabels = {
+            year: 'Year',
+            location: 'Location',
+            deathsToll: 'Death Toll'
+        };
+        
+        // Count active filters
+        const activeCount = Object.keys(filters).length;
+        
+        if (activeCount === 0) {
+            // Hide summary if no filters active
+            activeFiltersSummary.classList.add('hidden');
+            return;
+        }
+        
+        // Show summary and create badges
+        activeFiltersSummary.classList.remove('hidden');
+        
+        Object.keys(filters).forEach(filterKey => {
+            const filterValue = filters[filterKey];
+            const filterLabel = filterLabels[filterKey] || filterKey;
+            
+            // Create badge element
+            const badge = document.createElement('div');
+            badge.className = 'filter-badge';
+            
+            // Create badge content
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'filter-badge-label';
+            labelSpan.textContent = `${filterLabel}:`;
+            
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'filter-badge-value';
+            valueSpan.textContent = this.escapeHtml(filterValue);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'filter-badge-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = `Remove ${filterLabel} filter`;
+            removeBtn.setAttribute('aria-label', `Remove ${filterLabel} filter`);
+            removeBtn.addEventListener('click', () => this.clearIndividualFilter(filterKey));
+            
+            badge.appendChild(labelSpan);
+            badge.appendChild(valueSpan);
+            badge.appendChild(removeBtn);
+            
+            activeFiltersList.appendChild(badge);
+        });
+    }
+    
+    async clearIndividualFilter(filterName) {
+        // Map filter names to element IDs
+        const filterElementIds = {
+            year: 'year-filter',
+            location: 'location-filter',
+            deathsToll: 'deaths-toll-filter'
+        };
+        
+        const elementId = filterElementIds[filterName];
+        if (!elementId) return;
+        
+        const filterElement = document.getElementById(elementId);
+        if (filterElement) {
+            // Reset filter value
+            filterElement.value = '';
+            filterElement.classList.remove('has-value');
+            
+            // Trigger filter change to update UI and reload data
+            const selectedFilters = {
+                year: document.getElementById('year-filter').value,
+                location: document.getElementById('location-filter').value,
+                deathsToll: document.getElementById('deaths-toll-filter').value
+            };
+            
+            // Remove empty values
+            Object.keys(selectedFilters).forEach(key => {
+                if (!selectedFilters[key]) {
+                    delete selectedFilters[key];
+                }
+            });
+            
+            // Reload filter options and apply filters
+            await this.loadFilterOptions(selectedFilters);
+            await this.applyFilters();
+        }
     }
     
     updateVisiblePointsCount() {

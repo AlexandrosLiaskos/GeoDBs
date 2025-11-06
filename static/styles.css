@@ -407,6 +407,95 @@ h6 { font-size: 0.75rem; }
     background-color: var(--background-secondary);
 }
 
+/* Active filter indicator */
+.filter-group select.has-value {
+    border-bottom: 2px solid var(--primary-color);
+    border-left: 3px solid var(--primary-color);
+    background-color: rgba(51, 122, 183, 0.05);
+    padding-left: calc(1rem - 3px);
+}
+
+.filter-group select.has-value:hover {
+    background-color: rgba(51, 122, 183, 0.08);
+}
+
+/* Active Filters Summary Panel */
+.active-filters-summary {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background-color: rgba(51, 122, 183, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.active-filters-summary.hidden {
+    display: none;
+}
+
+.active-filters-summary h4 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.active-filters-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+/* Filter Badge Styling */
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 0.4rem 0.75rem;
+    background-color: var(--background-primary);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.filter-badge-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.filter-badge-value {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.filter-badge-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    margin-left: 0.25rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    transition: all var(--transition-fast);
+}
+
+.filter-badge-remove:hover {
+    color: var(--error-color);
+    transform: scale(1.1);
+}
+
 /* Filter dropdowns use native select behavior for accessibility and performance */
 
 
@@ -1800,6 +1889,34 @@ body::-webkit-scrollbar-thumb:hover {
         display: flex;
         align-items: center;
         min-height: 50px;
+    }
+    
+    /* Active filters adjustments for mobile */
+    .active-filters-summary {
+        padding: var(--spacing-sm);
+    }
+    
+    .active-filters-list {
+        gap: 0.4rem;
+    }
+    
+    .filter-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.6rem;
+    }
+    
+    .filter-badge-remove {
+        width: 1rem;
+        height: 1rem;
+        font-size: 1rem;
+    }
+    
+    /* Mobile filter toggle button - accommodate longer text */
+    .mobile-toggle-btn {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
     }
     
     /* Keep navigation on left, title centered on mobile */
