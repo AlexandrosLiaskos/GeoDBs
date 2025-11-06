@@ -138,8 +138,7 @@ class FloodMapApp {
         // Filter controls with interactive filtering
 const yearFilter = document.getElementById('year-filter');
 const locationFilter = document.getElementById('location-filter');
-const causeFilter = document.getElementById('cause-filter');
-const casualtiesFilter = document.getElementById('casualties-filter');        // Single handler for all filter changes to avoid redundancy
+const deathsTollFilter = document.getElementById('deaths-toll-filter');        // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
             // Skip if we're already updating
             if (this.isUpdatingFilters) return;
@@ -148,8 +147,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         const selectedFilters = {
             year: yearFilter.value,
             location: locationFilter.value,
-            cause: causeFilter.value,
-            casualties: casualtiesFilter.value
+            deathsToll: deathsTollFilter.value
         };            try {
                 // Update available options in other filters
                 await this.loadFilterOptions(selectedFilters);
@@ -171,12 +169,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
 
-        causeFilter.addEventListener('change', () => {
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-
-        casualtiesFilter.addEventListener('change', () => {
+        deathsTollFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
@@ -314,7 +307,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         
         try {
             // Show loading state on filter dropdowns
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
@@ -330,10 +323,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             while (true) {
                 let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
-                if (selectedFilters.casualties === 'with') {
+                if (selectedFilters.deathsToll === 'with') {
                     query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-                } else if (selectedFilters.casualties === 'without') {
+                } else if (selectedFilters.deathsToll === 'without') {
                     query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
                 }
                 const { data: batchData, error } = await query;
@@ -360,10 +352,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             while (true) {
                 let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.cause) query = query.eq('cause_of_flood', selectedFilters.cause);
-                if (selectedFilters.casualties === 'with') {
+                if (selectedFilters.deathsToll === 'with') {
                     query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-                } else if (selectedFilters.casualties === 'without') {
+                } else if (selectedFilters.deathsToll === 'without') {
                     query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
                 }
                 const { data: batchData, error } = await query;
@@ -379,39 +370,13 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             locations.splice(100);
             // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
             
-            // Causes query with pagination to fetch all records
-            // console.log('Querying causes with pagination...');
-            let allCausesData = [];
-            start = 0;
-            let causeBatches = 0;
-            while (true) {
-                let query = window.supabaseClient.from('floods').select('cause_of_flood').not('cause_of_flood', 'is', null).range(start, start + batchSize - 1);
-                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                if (selectedFilters.casualties === 'with') {
-                    query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-                } else if (selectedFilters.casualties === 'without') {
-                    query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
-                }
-                const { data: batchData, error } = await query;
-                if (error) throw error;
-                causeBatches++;
-                allCausesData.push(...batchData);
-                // console.log(`📦 Cause batch ${causeBatches}: fetched ${batchData.length} records (total so far: ${allCausesData.length})`);
-                if (batchData.length < batchSize) break;
-                start += batchSize;
-            }
-            const causesData = allCausesData;
-            const causes = this._getUniqueValuesWithCount(causesData, 'cause_of_flood');
-            // console.log(`✅ Causes: Fetched ${causesData.length} total records in ${causeBatches} batch(es), found ${causes.length} unique causes`);
-            
-            // Casualties filter options (categorical)
-            const casualties = [
-                { value: 'with', label: 'With Casualties' },
-                { value: 'without', label: 'No Casualties' }
+            // Death Toll filter options (categorical)
+            const deathsToll = [
+                { value: 'with', label: 'With Deaths' },
+                { value: 'without', label: 'No Deaths' }
             ];
             
-            this.filterOptions = { years, locations, causes, casualties };
+            this.filterOptions = { years, locations, deathsToll };
             
             this.populateFilterDropdowns(selectedFilters);
             
@@ -427,7 +392,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             console.error('Current filter state:', selectedFilters);
             
             // Restore opacity and hide loading on error
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
             selects.forEach(s => s.style.opacity = '1');
             this.showFilterLoading(false);
             
@@ -490,13 +455,11 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         // Store current selections
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
-        const causeSelect = document.getElementById('cause-filter');
-        const casualtiesSelect = document.getElementById('casualties-filter');
+        const deathsTollSelect = document.getElementById('deaths-toll-filter');
         
         const currentYear = selectedFilters.year || yearSelect.value;
         const currentLocation = selectedFilters.location || locationSelect.value;
-        const currentCause = selectedFilters.cause || causeSelect.value;
-        const currentCasualties = selectedFilters.casualties || casualtiesSelect.value;
+        const currentDeathsToll = selectedFilters.deathsToll || deathsTollSelect.value;
         
         // Clear and repopulate year filter
         const yearOptions = yearSelect.querySelectorAll('option:not(:first-child)');
@@ -529,29 +492,17 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         });
         // console.log(`Added ${this.filterOptions.locations.length} location options`);
         
-        // Clear and repopulate cause filter
-        const causeOptions = causeSelect.querySelectorAll('option:not(:first-child)');
-        causeOptions.forEach(opt => opt.remove());
-        this.filterOptions.causes.forEach(cause => {
+        // Clear and repopulate deaths toll filter
+        const deathsTollOptions = deathsTollSelect.querySelectorAll('option:not(:first-child)');
+        deathsTollOptions.forEach(opt => opt.remove());
+        this.filterOptions.deathsToll.forEach(deathToll => {
             const option = document.createElement('option');
-            option.value = cause;
-            option.textContent = cause;
-            if (cause === currentCause) option.selected = true;
-            causeSelect.appendChild(option);
+            option.value = deathToll.value;
+            option.textContent = deathToll.label;
+            if (deathToll.value === currentDeathsToll) option.selected = true;
+            deathsTollSelect.appendChild(option);
         });
-        // console.log(`Added ${this.filterOptions.causes.length} cause options`);
-        
-        // Clear and repopulate casualties filter
-        const casualtiesOptions = casualtiesSelect.querySelectorAll('option:not(:first-child)');
-        casualtiesOptions.forEach(opt => opt.remove());
-        this.filterOptions.casualties.forEach(casualty => {
-            const option = document.createElement('option');
-            option.value = casualty.value;
-            option.textContent = casualty.label;
-            if (casualty.value === currentCasualties) option.selected = true;
-            casualtiesSelect.appendChild(option);
-        });
-        // console.log(`Added ${this.filterOptions.casualties.length} casualties options`);
+        // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
         
         // Re-apply the dropdown limiting after repopulating
         if (typeof limitDropdowns === 'function') {
@@ -566,10 +517,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             let totalQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
-            if (filters.cause) totalQuery = totalQuery.eq('cause_of_flood', filters.cause);
-            if (filters.casualties === 'with') {
+            if (filters.deathsToll === 'with') {
                 totalQuery = totalQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.casualties === 'without') {
+            } else if (filters.deathsToll === 'without') {
                 totalQuery = totalQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { count: totalCount, error: totalError } = await totalQuery;
@@ -578,10 +528,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             // Min year
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
-            if (filters.cause) minQuery = minQuery.eq('cause_of_flood', filters.cause);
-            if (filters.casualties === 'with') {
+            if (filters.deathsToll === 'with') {
                 minQuery = minQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.casualties === 'without') {
+            } else if (filters.deathsToll === 'without') {
                 minQuery = minQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { data: minData, error: minError } = await minQuery;
@@ -591,10 +540,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             // Max year
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
-            if (filters.cause) maxQuery = maxQuery.eq('cause_of_flood', filters.cause);
-            if (filters.casualties === 'with') {
+            if (filters.deathsToll === 'with') {
                 maxQuery = maxQuery.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.casualties === 'without') {
+            } else if (filters.deathsToll === 'without') {
                 maxQuery = maxQuery.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             const { data: maxData, error: maxError } = await maxQuery;
@@ -605,7 +553,6 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
-            if (filters.cause) casualtiesQuery = casualtiesQuery.eq('cause_of_flood', filters.cause);
             // Note: casualties filter is NOT applied here so this stat always shows events with casualties within other selected filters
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
@@ -613,7 +560,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             const stats = {
                 total_events: totalCount,
                 year_range: { min: minYear, max: maxYear },
-                events_with_casualties: casualtiesCount
+                events_with_deaths: casualtiesCount
             };
             
             document.getElementById('total-events').textContent = stats.total_events.toLocaleString();
@@ -624,8 +571,8 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 yearRangeText = `${stats.year_range.min} - ${stats.year_range.max}`;
             }
             document.getElementById('year-range').textContent = yearRangeText;
-            document.getElementById('events-casualties').textContent = 
-                stats.events_with_casualties.toLocaleString();
+            document.getElementById('events-deaths').textContent = 
+                stats.events_with_deaths.toLocaleString();
         } catch (error) {
             console.error('Error loading stats:', error);
         }
@@ -645,10 +592,9 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
 
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
-            if (filters.cause) query = query.eq('cause_of_flood', filters.cause);
-            if (filters.casualties === 'with') {
+            if (filters.deathsToll === 'with') {
                 query = query.not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
-            } else if (filters.casualties === 'without') {
+            } else if (filters.deathsToll === 'without') {
                 query = query.or('deaths_toll.is.null,deaths_toll.eq.,deaths_toll.eq.0,deaths_toll.eq. ,deaths_toll.eq. 0,deaths_toll.eq.0 ');
             }
             
@@ -726,7 +672,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
                 <div style="font-size: 12px; padding: 6px; line-height: 1.4;">
                     <strong style="font-size: 13px;">${this.escapeHtml(flood.location_name || 'Unknown')}</strong><br>
                     <span style="color: #666;">Year:</span> <strong>${flood.year || 'N/A'}</strong><br>
-                    <span style="color: #666;">Casualties:</span> <strong>${deathsToll}</strong><br>
+                    <span style="color: #666;">Death Toll:</span> <strong>${deathsToll}</strong><br>
                     <span style="color: #666;">Cause:</span> ${cause}
                 </div>
             `;
@@ -823,7 +769,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
             { key: 'year', label: 'Year' },
             { key: 'location_name', label: 'Location' },
             { key: 'flood_event_name', label: 'Event Name' },
-            { key: 'deaths_toll', label: 'Deaths' },
+            { key: 'deaths_toll', label: 'Death Toll' },
             { key: 'cause_of_flood', label: 'Cause' },
             { key: 'source', label: 'Source' },
             { key: 'reference', label: 'Reference', isLink: true }
@@ -884,8 +830,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
-            cause: document.getElementById('cause-filter').value,
-            casualties: document.getElementById('casualties-filter').value
+            deathsToll: document.getElementById('deaths-toll-filter').value
         };
 
         // Count active filters
@@ -994,14 +939,14 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
     }
     
     addFilterErrorState() {
-        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
         selects.forEach(select => {
             select.classList.add('filter-error-state');
         });
     }
     
     disableFilterDropdowns() {
-        const selects = document.querySelectorAll('#year-filter, #location-filter, #cause-filter, #casualties-filter');
+        const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
         selects.forEach(select => {
             select.disabled = true;
             select.classList.add('filter-error-state');
@@ -1010,8 +955,7 @@ const casualtiesFilter = document.getElementById('casualties-filter');        //
     async clearFilters() {
         document.getElementById('year-filter').value = '';
         document.getElementById('location-filter').value = '';
-        document.getElementById('cause-filter').value = '';
-        document.getElementById('casualties-filter').value = '';
+        document.getElementById('deaths-toll-filter').value = '';
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
