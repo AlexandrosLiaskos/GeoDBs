@@ -645,9 +645,15 @@ h6 { font-size: 0.75rem; }
     pointer-events: none;
 }
 
+/* Dropdown Options Container
+ * IMPORTANT: max-height must be 100% (relative to parent) not a fixed pixel value.
+ * The parent .dropdown-menu has max-height: min(300px, 40vh) which varies by viewport.
+ * Using 100% ensures the child never exceeds the parent's constrained height,
+ * preventing visual overflow and overlap with other UI elements.
+ */
 .dropdown-options {
     position: relative;
-    max-height: 300px;
+    max-height: 100%;
     overflow-y: auto;
     padding: 0.25rem 0;
     scroll-behavior: smooth;
