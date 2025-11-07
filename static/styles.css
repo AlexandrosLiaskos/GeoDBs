@@ -310,7 +310,7 @@ h6 { font-size: 0.75rem; }
     border: 1px solid var(--border-color);
     height: 100%;
     overflow-y: auto;
-    overflow-x: visible;
+    overflow-x: clip;
     position: relative;
 }
 
@@ -598,6 +598,18 @@ h6 { font-size: 0.75rem; }
 }
 
 /* Dropdown Menu */
+/* DROPDOWN CONTAINMENT STRATEGY
+ * ==============================
+ * The dropdown menu uses multiple CSS properties to ensure proper containment:
+ * - contain: layout style; - Creates a formatting context and isolates layout
+ * - isolation: isolate; - Creates a new stacking context for children
+ * - will-change: transform, opacity; - Promotes to compositor layer
+ * - transform: translateZ(0); - Forces GPU acceleration (fallback)
+ * - overflow: hidden; - Clips overflowing content
+ * 
+ * This multi-layered approach ensures dropdown options stay within their container
+ * and don't overlap with other UI elements, even when the sidebar scrolls.
+ */
 /* Dropdown menu z-index: 1100 (Tier 4 - Primary Dropdowns).
  * Must appear above tooltips (1000) and user menu (1050) but below modals and banners (10000+).
  * The high z-index ensures dropdowns are not obscured by other UI elements when open. */
@@ -610,12 +622,15 @@ h6 { font-size: 0.75rem; }
     border: 2px solid var(--primary-color);
     border-radius: 0;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    max-height: 300px;
+    max-height: min(300px, 40vh);
     overflow: hidden;
     z-index: 1100;
+    isolation: isolate;
+    contain: layout style;
+    will-change: transform, opacity;
+    transform: translateZ(0);
     display: none;
     opacity: 0;
-    transform: translateY(-5px);
     transition: all var(--transition-base);
     box-sizing: border-box;
 }
@@ -626,11 +641,17 @@ h6 { font-size: 0.75rem; }
     transform: translateY(0);
 }
 
+.dropdown-menu:not(.show) {
+    pointer-events: none;
+}
+
 .dropdown-options {
+    position: relative;
     max-height: 300px;
     overflow-y: auto;
     padding: 0.25rem 0;
     scroll-behavior: smooth;
+    contain: layout;
 }
 
 /* Dropdown Options */
@@ -2345,9 +2366,13 @@ body::-webkit-scrollbar-thumb:hover {
     }
     
     .dropdown-menu {
-        max-height: 300px;
+        max-height: min(300px, 40vh);
         border-radius: 0;
         z-index: 1100;
+        contain: layout style;
+        isolation: isolate;
+        will-change: transform, opacity;
+        transform: translateZ(0);
     }
     
     .dropdown-option {
