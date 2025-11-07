@@ -310,7 +310,7 @@ h6 { font-size: 0.75rem; }
     border: 1px solid var(--border-color);
     height: 100%;
     overflow-y: auto;
-    overflow-x: clip;
+    overflow-x: visible;
     position: relative;
 }
 
@@ -501,7 +501,7 @@ h6 { font-size: 0.75rem; }
     width: 100%;
     display: flex;
     align-items: stretch;
-    z-index: 0;
+    z-index: 1;
 }
 
 /* Dropdown open state */
@@ -605,6 +605,7 @@ h6 { font-size: 0.75rem; }
     top: calc(100% + 2px);
     left: 0;
     right: 0;
+    width: 100%;
     background: var(--background-primary);
     border: 2px solid var(--primary-color);
     border-radius: 0;
@@ -2297,6 +2298,7 @@ body::-webkit-scrollbar-thumb:hover {
         display: block;
         height: calc(100vh - 120px); /* Subtract header and controls height */
         overflow-y: auto;
+        overflow-x: visible;
         margin-bottom: 0;
     }
     

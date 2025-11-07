@@ -26,6 +26,7 @@ class FloodMapApp {
         this.filteredOptions = {};
         this.highlightedIndex = {};
         this.dropdownElements = {};
+        this.dropdownsReady = false;
         
         this.init();
     }
@@ -36,6 +37,7 @@ class FloodMapApp {
         this.initEventListeners();
         await this.checkDatabaseConnection();
         await this.loadFilterOptions();
+        this.initCustomDropdowns();
         await this.loadStats({});
         await this.loadFloodData();
     }
@@ -143,9 +145,6 @@ class FloodMapApp {
                 });
             });
         }
-        
-        // Initialize custom dropdowns
-        this.initCustomDropdowns();
         
         // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
@@ -292,6 +291,8 @@ class FloodMapApp {
 
     // Custom Dropdown Implementation
     initCustomDropdowns() {
+        if (window.DEBUG_MODE) console.log('Initializing custom dropdowns...');
+
         const dropdowns = [
             { name: 'year', id: 'year-dropdown' },
             { name: 'location', id: 'location-dropdown' },
@@ -301,10 +302,16 @@ class FloodMapApp {
 
         dropdowns.forEach(({ name, id }) => {
             const container = document.getElementById(id);
-            if (!container) return;
+            if (!container) {
+                console.warn(`Dropdown container ${id} not found`);
+                return;
+            }
 
             const elements = this.getDropdownElements(name);
-            if (!elements.input) return;
+            if (!elements.input) {
+                console.warn(`Dropdown input for ${name} not found`);
+                return;
+            }
 
             // Initialize state
             this.dropdownStates[name] = { isOpen: false, selectedValue: '' };
@@ -313,7 +320,13 @@ class FloodMapApp {
 
             // Setup event listeners
             this.setupDropdownListeners(name, elements);
+
+            if (window.DEBUG_MODE) console.log(`Dropdown ${name} initialized successfully`);
         });
+
+        this.dropdownsReady = true;
+
+        if (window.DEBUG_MODE) console.log('Custom dropdowns initialization complete');
 
         // Global click handler to close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
@@ -335,7 +348,12 @@ class FloodMapApp {
     getDropdownElements(filterName) {
         // Cache elements for performance
         if (this.dropdownElements[filterName]) {
-            return this.dropdownElements[filterName];
+            // Verify cached elements still exist in DOM
+            if (this.dropdownElements[filterName].input && !document.contains(this.dropdownElements[filterName].input)) {
+                delete this.dropdownElements[filterName];
+            } else {
+                return this.dropdownElements[filterName];
+            }
         }
 
         const input = document.getElementById(`${filterName}-filter`);
@@ -343,6 +361,11 @@ class FloodMapApp {
         const dropdownMenu = document.getElementById(`${filterName}-dropdown-menu`);
         const optionsContainer = dropdownMenu?.querySelector('.dropdown-options');
         const hiddenSelect = document.getElementById(`${filterName}-filter-hidden`);
+
+        if (!input) {
+            console.error(`Dropdown input for ${filterName} not found`);
+            return { input: null, toggleButton: null, dropdownMenu: null, optionsContainer: null, hiddenSelect: null };
+        }
 
         const elements = {
             input,
@@ -354,6 +377,32 @@ class FloodMapApp {
 
         this.dropdownElements[filterName] = elements;
         return elements;
+    }
+
+    validateDropdownState(filterName) {
+        const elements = this.getDropdownElements(filterName);
+        const state = this.dropdownStates[filterName];
+        
+        if (!state) {
+            console.warn(`Dropdown state for ${filterName} is missing`);
+            return false;
+        }
+        
+        if (!elements.input) {
+            console.warn(`Dropdown input for ${filterName} is missing`);
+            return false;
+        }
+        
+        // Check if input value matches state
+        const expectedValue = state.selectedValue;
+        const actualValue = elements.input.value;
+        
+        if (expectedValue && actualValue !== expectedValue) {
+            console.warn(`State mismatch for ${filterName}: expected ${expectedValue}, got ${actualValue}`);
+            return false;
+        }
+        
+        return true;
     }
 
     setupDropdownListeners(filterName, elements) {
@@ -431,7 +480,19 @@ class FloodMapApp {
 
     openDropdown(filterName) {
         const elements = this.getDropdownElements(filterName);
-        if (!elements.dropdownMenu) return;
+        if (!elements.dropdownMenu || !elements.input) return;
+
+        // Validate state
+        if (!this.validateDropdownState(filterName)) {
+            console.warn(`Invalid dropdown state for ${filterName}, attempting recovery`);
+            this.dropdownStates[filterName] = { isOpen: false, selectedValue: elements.input.value || '' };
+        }
+
+        // Check if options are available
+        if (!this.filterOptions || !this.filterOptions[this.getFilterOptionsKey(filterName)]?.length) {
+            console.warn('No options available for', filterName);
+            return;
+        }
 
         // Close other dropdowns first
         Object.keys(this.dropdownStates).forEach(name => {
@@ -442,13 +503,13 @@ class FloodMapApp {
 
         this.dropdownStates[filterName].isOpen = true;
         elements.dropdownMenu.classList.add('show');
-        elements.input?.classList.add('dropdown-open');
+        elements.input.classList.add('dropdown-open');
         elements.toggleButton?.classList.add('open');
-        elements.input?.setAttribute('aria-expanded', 'true');
+        elements.input.setAttribute('aria-expanded', 'true');
         this.highlightedIndex[filterName] = -1;
 
         // Render all options if input is empty, or filtered options if there's text
-        const searchText = elements.input?.value.trim() || '';
+        const searchText = elements.input.value.trim() || '';
         const options = this.filterDropdownOptions(filterName, searchText);
         this.renderDropdownOptions(filterName, options);
 
@@ -488,6 +549,7 @@ class FloodMapApp {
     }
 
     filterDropdownOptions(filterName, searchText) {
+        if (!this.filterOptions) return [];
         const allOptions = this.filterOptions[this.getFilterOptionsKey(filterName)] || [];
         
         if (!searchText) {
@@ -514,56 +576,67 @@ class FloodMapApp {
     }
 
     renderDropdownOptions(filterName, options) {
+        if (!this.filterOptions || !this.getFilterOptionsKey(filterName)) return;
+
         const elements = this.getDropdownElements(filterName);
         if (!elements.optionsContainer) return;
 
-        elements.optionsContainer.innerHTML = '';
+        try {
+            elements.optionsContainer.innerHTML = '';
 
-        if (!options || options.length === 0) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'dropdown-empty';
-            emptyDiv.textContent = 'No results found';
-            elements.optionsContainer.appendChild(emptyDiv);
-            return;
+            if (!options || options.length === 0) {
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'dropdown-empty';
+                emptyDiv.textContent = 'No results found';
+                elements.optionsContainer.appendChild(emptyDiv);
+                return;
+            }
+
+            const currentValue = this.dropdownStates[filterName]?.selectedValue || '';
+
+            options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'dropdown-option';
+                optionDiv.setAttribute('role', 'option');
+                
+                // Special handling for death toll display
+                let displayValue = option;
+                if (filterName === 'deaths-toll' && option === '0') {
+                    displayValue = '0 (None)';
+                }
+                
+                optionDiv.textContent = displayValue;
+
+                if (String(option) === String(currentValue)) {
+                    optionDiv.classList.add('selected');
+                    optionDiv.setAttribute('aria-selected', 'true');
+                }
+
+                optionDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.selectDropdownOption(filterName, option);
+                });
+
+                optionDiv.addEventListener('mouseenter', () => {
+                    this.highlightedIndex[filterName] = index;
+                    this.updateHighlight(filterName);
+                });
+
+                elements.optionsContainer.appendChild(optionDiv);
+            });
+        } catch (error) {
+            console.error(`Error rendering dropdown options for ${filterName}:`, error);
+            elements.optionsContainer.innerHTML = '';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'dropdown-empty';
+            errorDiv.textContent = 'Error loading options';
+            elements.optionsContainer.appendChild(errorDiv);
         }
-
-        const currentValue = this.dropdownStates[filterName].selectedValue;
-
-        options.forEach((option, index) => {
-            const optionDiv = document.createElement('div');
-            optionDiv.className = 'dropdown-option';
-            optionDiv.setAttribute('role', 'option');
-            
-            // Special handling for death toll display
-            let displayValue = option;
-            if (filterName === 'deaths-toll' && option === '0') {
-                displayValue = '0 (None)';
-            }
-            
-            optionDiv.textContent = displayValue;
-
-            if (String(option) === String(currentValue)) {
-                optionDiv.classList.add('selected');
-                optionDiv.setAttribute('aria-selected', 'true');
-            }
-
-            optionDiv.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.selectDropdownOption(filterName, option);
-            });
-
-            optionDiv.addEventListener('mouseenter', () => {
-                this.highlightedIndex[filterName] = index;
-                this.updateHighlight(filterName);
-            });
-
-            elements.optionsContainer.appendChild(optionDiv);
-        });
     }
 
     selectDropdownOption(filterName, value) {
         const elements = this.getDropdownElements(filterName);
-        if (!elements.input) return;
+        if (!elements.input || !value) return;
 
         // Update input with display value
         let displayValue = value;
@@ -579,8 +652,8 @@ class FloodMapApp {
             elements.hiddenSelect.value = value;
         }
 
-        // Update state
-        this.dropdownStates[filterName].selectedValue = value;
+        // Update state atomically
+        this.dropdownStates[filterName] = { ...this.dropdownStates[filterName], selectedValue: value };
 
         // Close dropdown
         this.closeDropdown(filterName);
@@ -875,6 +948,11 @@ class FloodMapApp {
     }
     
     populateFilterDropdowns(selectedFilters = {}) {
+        // Check if dropdowns are initialized
+        if (Object.keys(this.dropdownStates).length === 0) {
+            this.initCustomDropdowns();
+        }
+
         // console.log('Populating dropdowns with:', this.filterOptions);
         
         // Validate filter options
@@ -903,6 +981,11 @@ class FloodMapApp {
     populateDropdown(filterName, options, currentValue) {
         const elements = this.getDropdownElements(filterName);
         if (!elements.input) return;
+
+        // Ensure state exists
+        if (!this.dropdownStates[filterName]) {
+            this.dropdownStates[filterName] = { isOpen: false, selectedValue: '' };
+        }
 
         // Update hidden select for form compatibility
         if (elements.hiddenSelect) {
