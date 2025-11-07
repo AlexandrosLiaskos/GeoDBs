@@ -687,8 +687,13 @@ class FloodMapApp {
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
-            // Use DISTINCT queries to fetch only unique values directly from database
-            // This replaces the previous approach of fetching all records and extracting unique values client-side
+            // Use pagination to fetch all records in batches of 1,000 to overcome Supabase's default 1,000-row limit
+            // Each query fetches only the relevant column and applies filters from other dimensions
+            // This creates a cross-filtering effect where each dropdown shows only valid options
+            
+            if (window.DEBUG_MODE) {
+                console.log('Fetching all filter options with pagination (batch size: 1000)');
+            }
             
             // Years query - DISTINCT
             let yearsQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null);
@@ -699,8 +704,7 @@ class FloodMapApp {
                     yearsQuery = yearsQuery.eq(tagFilter.field, tagFilter.value);
                 });
             }
-            const { data: yearsData, error: yearsError } = await yearsQuery;
-            if (yearsError) throw yearsError;
+            const yearsData = await this._fetchAllRecords(yearsQuery);
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
             
             // Locations query - DISTINCT
@@ -712,8 +716,7 @@ class FloodMapApp {
                     locationsQuery = locationsQuery.eq(tagFilter.field, tagFilter.value);
                 });
             }
-            const { data: locationsData, error: locationsError } = await locationsQuery;
-            if (locationsError) throw locationsError;
+            const locationsData = await this._fetchAllRecords(locationsQuery);
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             
             // Death Toll query - DISTINCT
@@ -725,8 +728,7 @@ class FloodMapApp {
                     deathsTollQuery = deathsTollQuery.eq(tagFilter.field, tagFilter.value);
                 });
             }
-            const { data: deathsTollData, error: deathsTollError } = await deathsTollQuery;
-            if (deathsTollError) throw deathsTollError;
+            const deathsTollData = await this._fetchAllRecords(deathsTollQuery);
             const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
             
             // Event Names query - DISTINCT
@@ -734,8 +736,7 @@ class FloodMapApp {
             if (selectedFilters.year) eventNamesQuery = eventNamesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) eventNamesQuery = eventNamesQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll', selectedFilters.deathsToll);
-            const { data: eventNamesData, error: eventNamesError } = await eventNamesQuery;
-            if (eventNamesError) throw eventNamesError;
+            const eventNamesData = await this._fetchAllRecords(eventNamesQuery);
             const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
             
             this.filterOptions = { years, locations, deathsToll, eventNames };
@@ -824,6 +825,53 @@ class FloodMapApp {
         // if (fieldName === 'year') { console.log('📅 Year-specific debug - All years:', sortedValues); }
 
         return sortedValues;
+    }
+    
+    async _fetchAllRecords(query) {
+        // Helper method to fetch all records using pagination to overcome Supabase's 1000-row default limit
+        const allRecords = [];
+        const batchSize = 1000;
+        let offset = 0;
+        
+        try {
+            while (true) {
+                if (window.DEBUG_MODE) {
+                    console.log(`Fetching batch: offset ${offset}, size ${batchSize}`);
+                }
+                
+                const { data, error } = await query.range(offset, offset + batchSize - 1);
+                
+                if (error) {
+                    throw error;
+                }
+                
+                if (!data || data.length === 0) {
+                    break;
+                }
+                
+                allRecords.push(...data);
+                
+                if (window.DEBUG_MODE) {
+                    console.log(`Fetched ${data.length} records, total so far: ${allRecords.length}`);
+                }
+                
+                // If we got fewer records than batchSize, we've reached the end
+                if (data.length < batchSize) {
+                    break;
+                }
+                
+                offset += batchSize;
+            }
+            
+            if (window.DEBUG_MODE) {
+                console.log(`Pagination complete: ${allRecords.length} total records fetched`);
+            }
+            
+            return allRecords;
+        } catch (error) {
+            console.error('Error fetching records with pagination:', error);
+            throw error;
+        }
     }
     
     populateFilterDropdowns(selectedFilters = {}) {
