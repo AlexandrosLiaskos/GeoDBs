@@ -691,7 +691,7 @@ class FloodMapApp {
             // This replaces the previous approach of fetching all records and extracting unique values client-side
             
             // Years query - DISTINCT
-            let yearsQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).limit(10000);
+            let yearsQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null);
             if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.deathsToll) yearsQuery = yearsQuery.eq('deaths_toll', selectedFilters.deathsToll);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
@@ -704,7 +704,7 @@ class FloodMapApp {
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
             
             // Locations query - DISTINCT
-            let locationsQuery = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).limit(10000);
+            let locationsQuery = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null);
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
             if (selectedFilters.deathsToll) locationsQuery = locationsQuery.eq('deaths_toll', selectedFilters.deathsToll);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
@@ -717,7 +717,7 @@ class FloodMapApp {
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             
             // Death Toll query - DISTINCT
-            let deathsTollQuery = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ').limit(10000);
+            let deathsTollQuery = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ');
             if (selectedFilters.year) deathsTollQuery = deathsTollQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) deathsTollQuery = deathsTollQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
@@ -730,7 +730,7 @@ class FloodMapApp {
             const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
             
             // Event Names query - DISTINCT
-            let eventNamesQuery = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '').limit(10000);
+            let eventNamesQuery = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '');
             if (selectedFilters.year) eventNamesQuery = eventNamesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) eventNamesQuery = eventNamesQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll', selectedFilters.deathsToll);
