@@ -1509,7 +1509,6 @@ class FloodMapApp {
         // Close dropdown if open
         this.closeDropdown(dropdownName);
     }
-    }
     
     updateVisiblePointsCount() {
         document.getElementById('visible-points').textContent = 
