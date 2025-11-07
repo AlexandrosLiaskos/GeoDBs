@@ -155,60 +155,97 @@
                         <div id="filter-controls">
                             <!-- Year Filter (Single Year) -->
                             <div class="filter-group">
-                                <label for="year-filter">Specific Year:</label>
-                                <select id="year-filter">
-                                    <option value="">All Years</option>
-                                </select>
+                                <label for="year-filter">Specific Year (type to search):</label>
+                                <div class="custom-dropdown" id="year-dropdown">
+                                    <input type="text" 
+                                           id="year-filter" 
+                                           placeholder="Type to search or select..." 
+                                           autocomplete="off"
+                                           role="combobox"
+                                           aria-expanded="false"
+                                           aria-controls="year-dropdown-menu"
+                                           aria-label="Year filter">
+                                    <button type="button" class="dropdown-toggle" aria-label="Toggle year dropdown">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="year-dropdown-menu" role="listbox">
+                                        <div class="dropdown-options"></div>
+                                    </div>
+                                    <select id="year-filter-hidden" style="display: none;">
+                                        <option value="">All Years</option>
+                                    </select>
+                                </div>
                             </div>
                             
                             <!-- Location Filter -->
                             <div class="filter-group">
                                 <label for="location-filter">Location (type to search):</label>
-                                <div class="filter-with-search">
+                                <div class="custom-dropdown" id="location-dropdown">
                                     <input type="text" 
-                                           id="location-search" 
-                                           list="location-datalist" 
+                                           id="location-filter" 
                                            placeholder="Type to search or select..." 
                                            autocomplete="off"
-                                           aria-label="Search locations">
-                                    <select id="location-filter" style="display: none;">
+                                           role="combobox"
+                                           aria-expanded="false"
+                                           aria-controls="location-dropdown-menu"
+                                           aria-label="Location filter">
+                                    <button type="button" class="dropdown-toggle" aria-label="Toggle location dropdown">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="location-dropdown-menu" role="listbox">
+                                        <div class="dropdown-options"></div>
+                                    </div>
+                                    <select id="location-filter-hidden" style="display: none;">
                                         <option value="">All Locations</option>
                                     </select>
-                                    <datalist id="location-datalist"></datalist>
                                 </div>
                             </div>
                             
                             <!-- Death Toll Filter -->
                             <div class="filter-group">
                                 <label for="deaths-toll-filter">Death Toll (type to search):</label>
-                                <div class="filter-with-search">
+                                <div class="custom-dropdown" id="deaths-toll-dropdown">
                                     <input type="text" 
-                                           id="deaths-toll-search" 
-                                           list="deaths-toll-datalist" 
+                                           id="deaths-toll-filter" 
                                            placeholder="Type to search or select..." 
                                            autocomplete="off"
-                                           aria-label="Search death toll">
-                                    <select id="deaths-toll-filter" style="display: none;">
+                                           role="combobox"
+                                           aria-expanded="false"
+                                           aria-controls="deaths-toll-dropdown-menu"
+                                           aria-label="Death toll filter">
+                                    <button type="button" class="dropdown-toggle" aria-label="Toggle death toll dropdown">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="deaths-toll-dropdown-menu" role="listbox">
+                                        <div class="dropdown-options"></div>
+                                    </div>
+                                    <select id="deaths-toll-filter-hidden" style="display: none;">
                                         <option value="">All Events</option>
                                     </select>
-                                    <datalist id="deaths-toll-datalist"></datalist>
                                 </div>
                             </div>
                             
                             <!-- Event Name Filter -->
                             <div class="filter-group">
                                 <label for="event-name-filter">Event Name (type to search):</label>
-                                <div class="filter-with-search">
+                                <div class="custom-dropdown" id="event-name-dropdown">
                                     <input type="text" 
-                                           id="event-name-search" 
-                                           list="event-name-datalist" 
+                                           id="event-name-filter" 
                                            placeholder="Type to search or select..." 
                                            autocomplete="off"
-                                           aria-label="Search event names">
-                                    <select id="event-name-filter" style="display: none;">
+                                           role="combobox"
+                                           aria-expanded="false"
+                                           aria-controls="event-name-dropdown-menu"
+                                           aria-label="Event name filter">
+                                    <button type="button" class="dropdown-toggle" aria-label="Toggle event name dropdown">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="event-name-dropdown-menu" role="listbox">
+                                        <div class="dropdown-options"></div>
+                                    </div>
+                                    <select id="event-name-filter-hidden" style="display: none;">
                                         <option value="">All Events</option>
                                     </select>
-                                    <datalist id="event-name-datalist"></datalist>
                                 </div>
                             </div>
                             

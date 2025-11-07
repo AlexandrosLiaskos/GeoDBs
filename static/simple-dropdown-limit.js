@@ -1,3 +1,9 @@
+// Enhanced dropdown limiting solution - DISABLED for custom dropdown implementation
+// This script is no longer needed as the application now uses custom dropdown components
+// instead of native <select> elements for filters.
+// Keeping this file for potential future use with other select elements.
+
+if (false) {
 // Enhanced dropdown limiting solution with logging and error handling
 (function() {
     'use strict';
@@ -216,3 +222,4 @@
         console.log('💡 Usage: Call window.refreshDropdown("select-id") to refresh a specific dropdown');
     }
 })();
+} // End of disabled block

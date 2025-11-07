@@ -18,8 +18,11 @@ class FloodMapApp {
         this.modalElements = null; // Cache modal DOM elements
         this.popupTemplate = null; // Cache popup template
         
-        // Search input debouncing
-        this.searchDebounceTimer = null;
+        // Custom dropdown state management
+        this.dropdownStates = {};
+        this.filteredOptions = {};
+        this.highlightedIndex = {};
+        this.dropdownElements = {};
         
         this.init();
     }
@@ -138,16 +141,8 @@ class FloodMapApp {
             });
         }
         
-        // Filter controls with interactive filtering
-        const yearFilter = document.getElementById('year-filter');
-        const locationFilter = document.getElementById('location-filter');
-        const deathsTollFilter = document.getElementById('deaths-toll-filter');
-        const eventNameFilter = document.getElementById('event-name-filter');
-        
-        // Search inputs for searchable filters
-        const locationSearch = document.getElementById('location-search');
-        const deathsTollSearch = document.getElementById('deaths-toll-search');
-        const eventNameSearch = document.getElementById('event-name-search');
+        // Initialize custom dropdowns
+        this.initCustomDropdowns();
         
         // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
@@ -156,10 +151,10 @@ class FloodMapApp {
             this.isUpdatingFilters = true;
 
             const selectedFilters = {
-                year: yearFilter.value,
-                location: locationFilter.value,
-                deathsToll: deathsTollFilter.value,
-                eventName: eventNameFilter.value
+                year: document.getElementById('year-filter').value,
+                location: document.getElementById('location-filter').value,
+                deathsToll: document.getElementById('deaths-toll-filter').value,
+                eventName: document.getElementById('event-name-filter').value
             };
             
             try {
@@ -172,31 +167,8 @@ class FloodMapApp {
             }
         };
 
-        // Add change listeners to hidden selects with debouncing
-        yearFilter.addEventListener('change', () => {
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-
-        locationFilter.addEventListener('change', () => {
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-
-        deathsTollFilter.addEventListener('change', () => {
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-        
-        eventNameFilter.addEventListener('change', () => {
-            clearTimeout(this.filterUpdateTimer);
-            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
-        });
-        
-        // Initialize searchable filter inputs
-        this.initSearchableFilters(locationSearch, locationFilter, 'location-datalist');
-        this.initSearchableFilters(deathsTollSearch, deathsTollFilter, 'deaths-toll-datalist');
-        this.initSearchableFilters(eventNameSearch, eventNameFilter, 'event-name-datalist');
+        // Store handler for use in custom dropdowns
+        this.handleFilterChange = handleFilterChange;
         
         document.getElementById('clear-filters').addEventListener('click', () => {
             this.clearFilters();
@@ -315,74 +287,375 @@ class FloodMapApp {
         }
     }
 
-    // Searchable filter initialization
-    initSearchableFilters(searchInput, hiddenSelect, datalistId) {
-        if (!searchInput || !hiddenSelect) return;
-        
-        const datalist = document.getElementById(datalistId);
-        
-        // Input change handler with debouncing
-        searchInput.addEventListener('input', () => {
-            clearTimeout(this.searchDebounceTimer);
-            this.searchDebounceTimer = setTimeout(() => {
-                const searchValue = searchInput.value.trim();
-                
-                if (!searchValue) {
-                    // Clear selection
-                    hiddenSelect.value = '';
-                    hiddenSelect.classList.remove('has-value');
-                    searchInput.classList.remove('has-value');
-                    return;
-                }
-                
-                // Find matching option in datalist
-                const options = datalist.querySelectorAll('option');
-                let exactMatch = null;
-                let partialMatch = null;
-                
-                for (const option of options) {
-                    if (option.value === searchValue) {
-                        exactMatch = option.value;
-                        break;
-                    } else if (option.value.toLowerCase().includes(searchValue.toLowerCase())) {
-                        if (!partialMatch) partialMatch = option.value;
-                    }
-                }
-                
-                // Update hidden select
-                const matchedValue = exactMatch || partialMatch || searchValue;
-                if (exactMatch || partialMatch) {
-                    hiddenSelect.value = matchedValue;
-                    hiddenSelect.classList.add('has-value');
-                    searchInput.classList.add('has-value');
-                    // Trigger change event on hidden select
-                    hiddenSelect.dispatchEvent(new Event('change'));
-                }
-            }, 300);
+    // Custom Dropdown Implementation
+    initCustomDropdowns() {
+        const dropdowns = [
+            { name: 'year', id: 'year-dropdown' },
+            { name: 'location', id: 'location-dropdown' },
+            { name: 'deaths-toll', id: 'deaths-toll-dropdown' },
+            { name: 'event-name', id: 'event-name-dropdown' }
+        ];
+
+        dropdowns.forEach(({ name, id }) => {
+            const container = document.getElementById(id);
+            if (!container) return;
+
+            const elements = this.getDropdownElements(name);
+            if (!elements.input) return;
+
+            // Initialize state
+            this.dropdownStates[name] = { isOpen: false, selectedValue: '' };
+            this.filteredOptions[name] = [];
+            this.highlightedIndex[name] = -1;
+
+            // Setup event listeners
+            this.setupDropdownListeners(name, elements);
         });
-        
-        // Clear on Escape key
-        searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                searchInput.value = '';
-                hiddenSelect.value = '';
-                hiddenSelect.classList.remove('has-value');
-                searchInput.classList.remove('has-value');
-                hiddenSelect.dispatchEvent(new Event('change'));
+
+        // Global click handler to close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            Object.keys(this.dropdownStates).forEach(name => {
+                const elements = this.getDropdownElements(name);
+                const container = elements.input?.closest('.custom-dropdown');
+                if (container && !container.contains(e.target)) {
+                    this.closeDropdown(name);
+                }
+            });
+        });
+
+        // Close dropdowns on window resize
+        window.addEventListener('resize', () => {
+            this.closeAllDropdowns();
+        });
+    }
+
+    getDropdownElements(filterName) {
+        // Cache elements for performance
+        if (this.dropdownElements[filterName]) {
+            return this.dropdownElements[filterName];
+        }
+
+        const input = document.getElementById(`${filterName}-filter`);
+        const toggleButton = input?.nextElementSibling;
+        const dropdownMenu = document.getElementById(`${filterName}-dropdown-menu`);
+        const optionsContainer = dropdownMenu?.querySelector('.dropdown-options');
+        const hiddenSelect = document.getElementById(`${filterName}-filter-hidden`);
+
+        const elements = {
+            input,
+            toggleButton,
+            dropdownMenu,
+            optionsContainer,
+            hiddenSelect
+        };
+
+        this.dropdownElements[filterName] = elements;
+        return elements;
+    }
+
+    setupDropdownListeners(filterName, elements) {
+        const { input, toggleButton, dropdownMenu } = elements;
+
+        // Toggle button click
+        toggleButton?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleDropdown(filterName);
+        });
+
+        // Input click - open dropdown
+        input?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!this.dropdownStates[filterName].isOpen) {
+                this.openDropdown(filterName);
             }
         });
-        
-        // Auto-select on exact match from datalist
-        searchInput.addEventListener('change', () => {
-            const searchValue = searchInput.value.trim();
-            if (searchValue) {
-                hiddenSelect.value = searchValue;
-                hiddenSelect.classList.add('has-value');
-                searchInput.classList.add('has-value');
-                hiddenSelect.dispatchEvent(new Event('change'));
+
+        // Input focus - open dropdown and select text
+        input?.addEventListener('focus', () => {
+            this.openDropdown(filterName);
+            input.select();
+        });
+
+        // Input typing - filter options
+        input?.addEventListener('input', () => {
+            const searchText = input.value.trim();
+            const filtered = this.filterDropdownOptions(filterName, searchText);
+            this.renderDropdownOptions(filterName, filtered);
+            
+            // Keep dropdown open while typing
+            if (!this.dropdownStates[filterName].isOpen) {
+                this.openDropdown(filterName);
+            }
+        });
+
+        // Keyboard navigation
+        input?.addEventListener('keydown', (e) => {
+            const state = this.dropdownStates[filterName];
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (!state.isOpen) {
+                    this.openDropdown(filterName);
+                } else {
+                    this.highlightOption(filterName, 'down');
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (state.isOpen) {
+                    this.highlightOption(filterName, 'up');
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (state.isOpen && this.highlightedIndex[filterName] >= 0) {
+                    const options = this.filteredOptions[filterName];
+                    const selectedValue = options[this.highlightedIndex[filterName]];
+                    if (selectedValue) {
+                        this.selectDropdownOption(filterName, selectedValue);
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                if (state.isOpen) {
+                    this.closeDropdown(filterName);
+                } else if (!state.selectedValue) {
+                    input.value = '';
+                }
+            } else if (e.key === 'Tab') {
+                this.closeDropdown(filterName);
             }
         });
     }
+
+    openDropdown(filterName) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.dropdownMenu) return;
+
+        // Close other dropdowns first
+        Object.keys(this.dropdownStates).forEach(name => {
+            if (name !== filterName && this.dropdownStates[name].isOpen) {
+                this.closeDropdown(name);
+            }
+        });
+
+        this.dropdownStates[filterName].isOpen = true;
+        elements.dropdownMenu.classList.add('show');
+        elements.input?.classList.add('dropdown-open');
+        elements.toggleButton?.classList.add('open');
+        elements.input?.setAttribute('aria-expanded', 'true');
+        this.highlightedIndex[filterName] = -1;
+
+        // Render all options if input is empty, or filtered options if there's text
+        const searchText = elements.input?.value.trim() || '';
+        const options = this.filterDropdownOptions(filterName, searchText);
+        this.renderDropdownOptions(filterName, options);
+
+        // Scroll selected option into view
+        setTimeout(() => {
+            const selectedOption = elements.dropdownMenu.querySelector('.dropdown-option.selected');
+            if (selectedOption) {
+                this.scrollOptionIntoView(selectedOption);
+            }
+        }, 50);
+    }
+
+    closeDropdown(filterName) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.dropdownMenu) return;
+
+        this.dropdownStates[filterName].isOpen = false;
+        elements.dropdownMenu.classList.remove('show');
+        elements.input?.classList.remove('dropdown-open');
+        elements.toggleButton?.classList.remove('open');
+        elements.input?.setAttribute('aria-expanded', 'false');
+        this.highlightedIndex[filterName] = -1;
+    }
+
+    closeAllDropdowns() {
+        Object.keys(this.dropdownStates).forEach(name => {
+            this.closeDropdown(name);
+        });
+    }
+
+    toggleDropdown(filterName) {
+        if (this.dropdownStates[filterName].isOpen) {
+            this.closeDropdown(filterName);
+        } else {
+            this.openDropdown(filterName);
+        }
+    }
+
+    filterDropdownOptions(filterName, searchText) {
+        const allOptions = this.filterOptions[this.getFilterOptionsKey(filterName)] || [];
+        
+        if (!searchText) {
+            this.filteredOptions[filterName] = allOptions;
+            return allOptions;
+        }
+
+        const filtered = allOptions.filter(option => 
+            String(option).toLowerCase().includes(searchText.toLowerCase())
+        );
+        
+        this.filteredOptions[filterName] = filtered;
+        return filtered;
+    }
+
+    getFilterOptionsKey(filterName) {
+        const mapping = {
+            'year': 'years',
+            'location': 'locations',
+            'deaths-toll': 'deathsToll',
+            'event-name': 'eventNames'
+        };
+        return mapping[filterName] || filterName;
+    }
+
+    renderDropdownOptions(filterName, options) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.optionsContainer) return;
+
+        elements.optionsContainer.innerHTML = '';
+
+        if (!options || options.length === 0) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'dropdown-empty';
+            emptyDiv.textContent = 'No results found';
+            elements.optionsContainer.appendChild(emptyDiv);
+            return;
+        }
+
+        const currentValue = this.dropdownStates[filterName].selectedValue;
+
+        options.forEach((option, index) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'dropdown-option';
+            optionDiv.setAttribute('role', 'option');
+            
+            // Special handling for death toll display
+            let displayValue = option;
+            if (filterName === 'deaths-toll' && option === '0') {
+                displayValue = '0 (None)';
+            }
+            
+            optionDiv.textContent = displayValue;
+
+            if (String(option) === String(currentValue)) {
+                optionDiv.classList.add('selected');
+                optionDiv.setAttribute('aria-selected', 'true');
+            }
+
+            optionDiv.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.selectDropdownOption(filterName, option);
+            });
+
+            optionDiv.addEventListener('mouseenter', () => {
+                this.highlightedIndex[filterName] = index;
+                this.updateHighlight(filterName);
+            });
+
+            elements.optionsContainer.appendChild(optionDiv);
+        });
+    }
+
+    selectDropdownOption(filterName, value) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.input) return;
+
+        // Update input with display value
+        let displayValue = value;
+        if (filterName === 'deaths-toll' && value === '0') {
+            displayValue = '0 (None)';
+        }
+        
+        elements.input.value = displayValue;
+        elements.input.classList.add('has-value');
+
+        // Update hidden select
+        if (elements.hiddenSelect) {
+            elements.hiddenSelect.value = value;
+        }
+
+        // Update state
+        this.dropdownStates[filterName].selectedValue = value;
+
+        // Close dropdown
+        this.closeDropdown(filterName);
+
+        // Trigger filter change
+        if (this.handleFilterChange) {
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(() => this.handleFilterChange(), 300);
+        }
+    }
+
+    clearDropdownSelection(filterName) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.input) return;
+
+        elements.input.value = '';
+        elements.input.classList.remove('has-value');
+
+        if (elements.hiddenSelect) {
+            elements.hiddenSelect.value = '';
+        }
+
+        this.dropdownStates[filterName].selectedValue = '';
+
+        // Trigger filter change
+        if (this.handleFilterChange) {
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(() => this.handleFilterChange(), 300);
+        }
+    }
+
+    highlightOption(filterName, direction) {
+        const options = this.filteredOptions[filterName] || [];
+        if (options.length === 0) return;
+
+        let newIndex = this.highlightedIndex[filterName];
+
+        if (direction === 'down') {
+            newIndex = newIndex < options.length - 1 ? newIndex + 1 : 0;
+        } else if (direction === 'up') {
+            newIndex = newIndex > 0 ? newIndex - 1 : options.length - 1;
+        }
+
+        this.highlightedIndex[filterName] = newIndex;
+        this.updateHighlight(filterName);
+
+        // Scroll into view
+        const elements = this.getDropdownElements(filterName);
+        const optionElements = elements.optionsContainer?.querySelectorAll('.dropdown-option');
+        if (optionElements && optionElements[newIndex]) {
+            this.scrollOptionIntoView(optionElements[newIndex]);
+        }
+    }
+
+    updateHighlight(filterName) {
+        const elements = this.getDropdownElements(filterName);
+        const optionElements = elements.optionsContainer?.querySelectorAll('.dropdown-option');
+        if (!optionElements) return;
+
+        optionElements.forEach((el, index) => {
+            if (index === this.highlightedIndex[filterName]) {
+                el.classList.add('highlighted');
+            } else {
+                el.classList.remove('highlighted');
+            }
+        });
+    }
+
+    scrollOptionIntoView(optionElement) {
+        if (optionElement && optionElement.scrollIntoView) {
+            optionElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+    }
+
+    // Searchable filter initialization (old method - removed)
+    initSearchableFilters(searchInput, hiddenSelect, datalistId) {
+        // This method is no longer used with custom dropdowns
+        // Keeping stub for backwards compatibility
 
 
     async loadFilterOptions(selectedFilters = {}) {
@@ -463,8 +736,7 @@ class FloodMapApp {
             }
             const locationsData = allLocationsData;
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
-            locations.splice(100);
-            // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations (showing top 100)`);
+            // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations`);
             
             // Death Toll query with pagination to fetch all records
             // console.log('Querying death toll values with pagination...');
@@ -513,8 +785,7 @@ class FloodMapApp {
             }
             const eventNamesData = allEventNamesData;
             const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
-            eventNames.splice(100); // Limit to top 100 event names
-            // console.log(`✅ Event Names: Fetched ${eventNamesData.length} total records in ${eventNameBatches} batch(es), found ${eventNames.length} unique event names (showing top 100)`);
+            // console.log(`✅ Event Names: Fetched ${eventNamesData.length} total records in ${eventNameBatches} batch(es), found ${eventNames.length} unique event names`);
             
             this.filterOptions = { years, locations, deathsToll, eventNames };
             
@@ -593,134 +864,66 @@ class FloodMapApp {
             if (!this.filterOptions.locations || this.filterOptions.locations.length === 0) {
                 console.warn('⚠️ No locations available - check database connection');
             }
-            if (!this.filterOptions.causes || this.filterOptions.causes.length === 0) {
-                console.warn('⚠️ No causes available - check database connection');
-            }
         }
         
         // Store current selections
-        const yearSelect = document.getElementById('year-filter');
-        const locationSelect = document.getElementById('location-filter');
-        const deathsTollSelect = document.getElementById('deaths-toll-filter');
-        const eventNameSelect = document.getElementById('event-name-filter');
+        const currentYear = selectedFilters.year || document.getElementById('year-filter')?.value;
+        const currentLocation = selectedFilters.location || document.getElementById('location-filter')?.value;
+        const currentDeathsToll = selectedFilters.deathsToll || document.getElementById('deaths-toll-filter')?.value;
+        const currentEventName = selectedFilters.eventName || document.getElementById('event-name-filter')?.value;
         
-        const locationSearch = document.getElementById('location-search');
-        const deathsTollSearch = document.getElementById('deaths-toll-search');
-        const eventNameSearch = document.getElementById('event-name-search');
-        
-        const locationDatalist = document.getElementById('location-datalist');
-        const deathsTollDatalist = document.getElementById('deaths-toll-datalist');
-        const eventNameDatalist = document.getElementById('event-name-datalist');
-        
-        const currentYear = selectedFilters.year || yearSelect.value;
-        const currentLocation = selectedFilters.location || locationSelect.value;
-        const currentDeathsToll = selectedFilters.deathsToll || deathsTollSelect.value;
-        const currentEventName = selectedFilters.eventName || eventNameSelect.value;
-        
-        // Clear and repopulate year filter
-        const yearOptions = yearSelect.querySelectorAll('option:not(:first-child)');
-        yearOptions.forEach(opt => opt.remove());
-        this.filterOptions.years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            if (String(year) === String(currentYear)) option.selected = true;
-            yearSelect.appendChild(option);
-        });
-        // console.log(`Added ${this.filterOptions.years.length} year options`);
-        // console.log('📅 First 20 years added to dropdown:', this.filterOptions.years.slice(0, 20));
-        // console.log('📅 Last 20 years added to dropdown:', this.filterOptions.years.slice(-20));
-        // console.log('📅 All years in dropdown:', this.filterOptions.years);
-        // console.log('🔍 Actual <option> elements in year dropdown:', yearSelect.querySelectorAll('option').length - 1);
-        // console.log('🔍 Type of first year in filterOptions:', typeof this.filterOptions.years[0], '| Value:', this.filterOptions.years[0]);
-        // console.log('📊 Year range in dropdown - First:', this.filterOptions.years[0], 'Last:', this.filterOptions.years[this.filterOptions.years.length - 1]);
-        // console.log('🔧 limitDropdowns function available:', typeof limitDropdowns === 'function');
+        // Update each filter
+        this.populateDropdown('year', this.filterOptions.years, currentYear);
+        this.populateDropdown('location', this.filterOptions.locations, currentLocation);
+        this.populateDropdown('deaths-toll', this.filterOptions.deathsToll, currentDeathsToll);
+        this.populateDropdown('event-name', this.filterOptions.eventNames, currentEventName);
+    }
+    
+    populateDropdown(filterName, options, currentValue) {
+        const elements = this.getDropdownElements(filterName);
+        if (!elements.input) return;
 
-        // Clear and repopulate location filter
-        const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
-        locationOptions.forEach(opt => opt.remove());
-        locationDatalist.innerHTML = '';
-        this.filterOptions.locations.forEach(location => {
-            const option = document.createElement('option');
-            option.value = location;
-            option.textContent = location;
-            if (location === currentLocation) option.selected = true;
-            locationSelect.appendChild(option);
+        // Update hidden select for form compatibility
+        if (elements.hiddenSelect) {
+            const existingOptions = elements.hiddenSelect.querySelectorAll('option:not(:first-child)');
+            existingOptions.forEach(opt => opt.remove());
+
+            options.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                
+                // Special display for death toll
+                if (filterName === 'deaths-toll' && value === '0') {
+                    option.textContent = '0 (None)';
+                } else {
+                    option.textContent = value;
+                }
+                
+                if (String(value) === String(currentValue)) {
+                    option.selected = true;
+                }
+                elements.hiddenSelect.appendChild(option);
+            });
+        }
+
+        // Update input value and state
+        if (currentValue && options.includes(currentValue)) {
+            let displayValue = currentValue;
+            if (filterName === 'deaths-toll' && currentValue === '0') {
+                displayValue = '0 (None)';
+            }
             
-            // Add to datalist
-            const datalistOption = document.createElement('option');
-            datalistOption.value = location;
-            locationDatalist.appendChild(datalistOption);
-        });
-        // Update search input value if match exists
-        if (currentLocation) {
-            locationSearch.value = currentLocation;
-            locationSearch.classList.add('has-value');
+            elements.input.value = displayValue;
+            elements.input.classList.add('has-value');
+            this.dropdownStates[filterName].selectedValue = currentValue;
         } else {
-            locationSearch.value = '';
-            locationSearch.classList.remove('has-value');
+            elements.input.value = '';
+            elements.input.classList.remove('has-value');
+            this.dropdownStates[filterName].selectedValue = '';
         }
-        // console.log(`Added ${this.filterOptions.locations.length} location options`);
-        
-        // Clear and repopulate deaths toll filter
-        const deathsTollOptions = deathsTollSelect.querySelectorAll('option:not(:first-child)');
-        deathsTollOptions.forEach(opt => opt.remove());
-        deathsTollDatalist.innerHTML = '';
-        this.filterOptions.deathsToll.forEach(deathToll => {
-            const option = document.createElement('option');
-            option.value = deathToll;
-            // Display '0' as '0 (None)' for better UX
-            option.textContent = deathToll === '0' ? '0 (None)' : deathToll;
-            if (deathToll === currentDeathsToll) option.selected = true;
-            deathsTollSelect.appendChild(option);
-            
-            // Add to datalist
-            const datalistOption = document.createElement('option');
-            datalistOption.value = deathToll === '0' ? '0 (None)' : deathToll;
-            deathsTollDatalist.appendChild(datalistOption);
-        });
-        // Update search input value if match exists
-        if (currentDeathsToll) {
-            const displayValue = currentDeathsToll === '0' ? '0 (None)' : currentDeathsToll;
-            deathsTollSearch.value = displayValue;
-            deathsTollSearch.classList.add('has-value');
-        } else {
-            deathsTollSearch.value = '';
-            deathsTollSearch.classList.remove('has-value');
-        }
-        // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
-        
-        // Clear and repopulate event name filter
-        const eventNameOptions = eventNameSelect.querySelectorAll('option:not(:first-child)');
-        eventNameOptions.forEach(opt => opt.remove());
-        eventNameDatalist.innerHTML = '';
-        this.filterOptions.eventNames.forEach(eventName => {
-            const option = document.createElement('option');
-            option.value = eventName;
-            option.textContent = eventName;
-            if (eventName === currentEventName) option.selected = true;
-            eventNameSelect.appendChild(option);
-            
-            // Add to datalist
-            const datalistOption = document.createElement('option');
-            datalistOption.value = eventName;
-            eventNameDatalist.appendChild(datalistOption);
-        });
-        // Update search input value if match exists
-        if (currentEventName) {
-            eventNameSearch.value = currentEventName;
-            eventNameSearch.classList.add('has-value');
-        } else {
-            eventNameSearch.value = '';
-            eventNameSearch.classList.remove('has-value');
-        }
-        // console.log(`Added ${this.filterOptions.eventNames.length} event name options`);
-        
-        // Re-apply the dropdown limiting after repopulating
-        if (typeof limitDropdowns === 'function') {
-            // console.log('Calling limitDropdowns()...');
-            setTimeout(limitDropdowns, 100);
-        }
+
+        // Render dropdown options
+        this.renderDropdownOptions(filterName, options);
     }
     
     async loadStats(filters = {}) {
@@ -1035,15 +1238,14 @@ class FloodMapApp {
             eventName: document.getElementById('event-name-filter').value
         };
 
-        // Count active filters and apply has-value classes
+        // Get filter inputs
+        const yearInput = document.getElementById('year-filter');
+        const locationInput = document.getElementById('location-filter');
+        const deathsTollInput = document.getElementById('deaths-toll-filter');
+        const eventNameInput = document.getElementById('event-name-filter');
+        
+        // Count active filters
         let activeCount = 0;
-        const yearSelect = document.getElementById('year-filter');
-        const locationSelect = document.getElementById('location-filter');
-        const locationSearch = document.getElementById('location-search');
-        const deathsTollSelect = document.getElementById('deaths-toll-filter');
-        const deathsTollSearch = document.getElementById('deaths-toll-search');
-        const eventNameSelect = document.getElementById('event-name-filter');
-        const eventNameSearch = document.getElementById('event-name-search');
         
         Object.keys(filters).forEach(key => {
             if (!filters[key]) {
@@ -1055,30 +1257,24 @@ class FloodMapApp {
         
         // Apply/remove has-value classes
         if (filters.year) {
-            yearSelect.classList.add('has-value');
+            yearInput?.classList.add('has-value');
         } else {
-            yearSelect.classList.remove('has-value');
+            yearInput?.classList.remove('has-value');
         }
         if (filters.location) {
-            locationSelect.classList.add('has-value');
-            locationSearch.classList.add('has-value');
+            locationInput?.classList.add('has-value');
         } else {
-            locationSelect.classList.remove('has-value');
-            locationSearch.classList.remove('has-value');
+            locationInput?.classList.remove('has-value');
         }
         if (filters.deathsToll) {
-            deathsTollSelect.classList.add('has-value');
-            deathsTollSearch.classList.add('has-value');
+            deathsTollInput?.classList.add('has-value');
         } else {
-            deathsTollSelect.classList.remove('has-value');
-            deathsTollSearch.classList.remove('has-value');
+            deathsTollInput?.classList.remove('has-value');
         }
         if (filters.eventName) {
-            eventNameSelect.classList.add('has-value');
-            eventNameSearch.classList.add('has-value');
+            eventNameInput?.classList.add('has-value');
         } else {
-            eventNameSelect.classList.remove('has-value');
-            eventNameSearch.classList.remove('has-value');
+            eventNameInput?.classList.remove('has-value');
         }
         
         // Update active filters display
@@ -1207,33 +1403,41 @@ class FloodMapApp {
         });
     }
     async clearFilters() {
-        const yearSelect = document.getElementById('year-filter');
-        const locationSelect = document.getElementById('location-filter');
-        const deathsTollSelect = document.getElementById('deaths-toll-filter');
-        const eventNameSelect = document.getElementById('event-name-filter');
+        const yearInput = document.getElementById('year-filter');
+        const locationInput = document.getElementById('location-filter');
+        const deathsTollInput = document.getElementById('deaths-toll-filter');
+        const eventNameInput = document.getElementById('event-name-filter');
         
-        const locationSearch = document.getElementById('location-search');
-        const deathsTollSearch = document.getElementById('deaths-toll-search');
-        const eventNameSearch = document.getElementById('event-name-search');
+        // Clear all input values
+        if (yearInput) yearInput.value = '';
+        if (locationInput) locationInput.value = '';
+        if (deathsTollInput) deathsTollInput.value = '';
+        if (eventNameInput) eventNameInput.value = '';
         
-        yearSelect.value = '';
-        locationSelect.value = '';
-        deathsTollSelect.value = '';
-        eventNameSelect.value = '';
+        // Clear hidden selects
+        const yearHidden = document.getElementById('year-filter-hidden');
+        const locationHidden = document.getElementById('location-filter-hidden');
+        const deathsTollHidden = document.getElementById('deaths-toll-filter-hidden');
+        const eventNameHidden = document.getElementById('event-name-filter-hidden');
         
-        // Clear search inputs
-        locationSearch.value = '';
-        deathsTollSearch.value = '';
-        eventNameSearch.value = '';
+        if (yearHidden) yearHidden.value = '';
+        if (locationHidden) locationHidden.value = '';
+        if (deathsTollHidden) deathsTollHidden.value = '';
+        if (eventNameHidden) eventNameHidden.value = '';
         
         // Remove has-value classes
-        yearSelect.classList.remove('has-value');
-        locationSelect.classList.remove('has-value');
-        deathsTollSelect.classList.remove('has-value');
-        eventNameSelect.classList.remove('has-value');
-        locationSearch.classList.remove('has-value');
-        deathsTollSearch.classList.remove('has-value');
-        eventNameSearch.classList.remove('has-value');
+        yearInput?.classList.remove('has-value');
+        locationInput?.classList.remove('has-value');
+        deathsTollInput?.classList.remove('has-value');
+        eventNameInput?.classList.remove('has-value');
+        
+        // Reset dropdown states
+        ['year', 'location', 'deaths-toll', 'event-name'].forEach(name => {
+            if (this.dropdownStates[name]) {
+                this.dropdownStates[name].selectedValue = '';
+            }
+            this.closeDropdown(name);
+        });
         
         // Hide active filters summary
         const activeFiltersSummary = document.getElementById('active-filters-summary');
@@ -1312,58 +1516,23 @@ class FloodMapApp {
     }
     
     async clearIndividualFilter(filterName) {
-        // Map filter names to element IDs
-        const filterElementIds = {
-            year: 'year-filter',
-            location: 'location-filter',
-            deathsToll: 'deaths-toll-filter',
-            eventName: 'event-name-filter'
+        // Map filter names to dropdown names
+        const dropdownNames = {
+            year: 'year',
+            location: 'location',
+            deathsToll: 'deaths-toll',
+            eventName: 'event-name'
         };
         
-        const searchInputIds = {
-            location: 'location-search',
-            deathsToll: 'deaths-toll-search',
-            eventName: 'event-name-search'
-        };
+        const dropdownName = dropdownNames[filterName];
+        if (!dropdownName) return;
         
-        const elementId = filterElementIds[filterName];
-        if (!elementId) return;
+        // Clear the dropdown selection
+        this.clearDropdownSelection(dropdownName);
         
-        const filterElement = document.getElementById(elementId);
-        if (filterElement) {
-            // Reset filter value
-            filterElement.value = '';
-            filterElement.classList.remove('has-value');
-            
-            // Also clear the search input if it exists
-            const searchInputId = searchInputIds[filterName];
-            if (searchInputId) {
-                const searchInput = document.getElementById(searchInputId);
-                if (searchInput) {
-                    searchInput.value = '';
-                    searchInput.classList.remove('has-value');
-                }
-            }
-            
-            // Trigger filter change to update UI and reload data
-            const selectedFilters = {
-                year: document.getElementById('year-filter').value,
-                location: document.getElementById('location-filter').value,
-                deathsToll: document.getElementById('deaths-toll-filter').value,
-                eventName: document.getElementById('event-name-filter').value
-            };
-            
-            // Remove empty values
-            Object.keys(selectedFilters).forEach(key => {
-                if (!selectedFilters[key]) {
-                    delete selectedFilters[key];
-                }
-            });
-            
-            // Reload filter options and apply filters
-            await this.loadFilterOptions(selectedFilters);
-            await this.applyFilters();
-        }
+        // Close dropdown if open
+        this.closeDropdown(dropdownName);
+    }
     }
     
     updateVisiblePointsCount() {
