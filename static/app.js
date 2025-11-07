@@ -17,6 +17,9 @@ class FloodMapApp {
         this.floodDetailsCache = new Map(); // Cache for flood details
         this.modalElements = null; // Cache modal DOM elements
         this.popupTemplate = null; // Cache popup template
+        this.filterOptionsCache = null; // Cache for filter options
+        this.filterOptionsCacheTimestamp = null; // Timestamp for cache validity
+        this.FILTER_CACHE_TTL = 5 * 60 * 1000; // Cache TTL: 5 minutes
         
         // Custom dropdown state management
         this.dropdownStates = {};
@@ -670,124 +673,79 @@ class FloodMapApp {
             return;
         }
         
+        // Check cache validity before making database queries
+        if (this.isFilterCacheValid() && Object.keys(selectedFilters).length === 0) {
+            if (window.DEBUG_MODE) console.log('✅ Using cached filter options');
+            this.filterOptions = this.filterOptionsCache;
+            this.populateFilterDropdowns(selectedFilters);
+            return;
+        }
+        
         try {
             // Show loading state on filter dropdowns
             const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter, #event-name-filter');
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
-            // Fetch all values instead of using aggregates to avoid PostgREST PGRST123 error. Process in JS for efficiency with ~2000 records.
+            // Use DISTINCT queries to fetch only unique values directly from database
+            // This replaces the previous approach of fetching all records and extracting unique values client-side
             
-            // Years query with pagination to fetch all records despite Supabase's 1000-row limit
-            // Supabase/PostgREST default max-rows limit is 1000. This can be increased in Supabase project settings under API > Settings > Max Rows.
-            // Alternative solutions include pagination, RPC functions, or database views. Current implementation uses pagination to handle this limitation.
-            // console.log('Querying years with pagination...');
-            let allYearsData = [];
-            let start = 0;
-            const batchSize = 1000;
-            while (true) {
-                let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
-                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
-                // Apply tag filters
-                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
-                    selectedFilters.tagFilters.forEach(tagFilter => {
-                        query = query.eq(tagFilter.field, tagFilter.value);
-                    });
-                }
-                const { data: batchData, error } = await query;
-                if (error) throw error;
-                allYearsData.push(...batchData);
-                if (batchData.length < batchSize) break;
-                start += batchSize;
+            // Years query - DISTINCT
+            let yearsQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null);
+            if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
+            if (selectedFilters.deathsToll) yearsQuery = yearsQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                selectedFilters.tagFilters.forEach(tagFilter => {
+                    yearsQuery = yearsQuery.eq(tagFilter.field, tagFilter.value);
+                });
             }
-            const yearsData = allYearsData;
-            // if (yearsData.length >= 1000) console.warn('⚠️ Fetched 1000 or more records - Supabase row limit may be truncating results. Total DB records: 1992');
-            // console.log('📊 Raw yearsData sample (first 10):', yearsData.slice(0, 10));
-            // console.log('🔍 Type of first year value:', typeof yearsData[0]?.year, '| Value:', yearsData[0]?.year);
-            // console.log('📈 Total year records fetched:', yearsData.length);
-            // console.log('📅 Sample of 20 year values:', yearsData.slice(0, 20).map(d => d.year));
-            // console.log('📊 Year range in raw data - Min:', Math.min(...yearsData.map(d => d.year)), 'Max:', Math.max(...yearsData.map(d => d.year)));
+            const { data: yearsData, error: yearsError } = await yearsQuery;
+            if (yearsError) throw yearsError;
             const years = this._getUniqueValuesWithCount(yearsData, 'year');
-            // console.log(`Processing ${yearsData.length} year values, found ${years.length} unique years`);
             
-            // Locations query with pagination to fetch all records
-            // console.log('Querying locations with pagination...');
-            let allLocationsData = [];
-            start = 0;
-            let locationBatches = 0;
-            while (true) {
-                let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
-                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
-                // Apply tag filters
-                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
-                    selectedFilters.tagFilters.forEach(tagFilter => {
-                        query = query.eq(tagFilter.field, tagFilter.value);
-                    });
-                }
-                const { data: batchData, error } = await query;
-                if (error) throw error;
-                locationBatches++;
-                allLocationsData.push(...batchData);
-                // console.log(`📦 Location batch ${locationBatches}: fetched ${batchData.length} records (total so far: ${allLocationsData.length})`);
-                if (batchData.length < batchSize) break;
-                start += batchSize;
+            // Locations query - DISTINCT
+            let locationsQuery = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null);
+            if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
+            if (selectedFilters.deathsToll) locationsQuery = locationsQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                selectedFilters.tagFilters.forEach(tagFilter => {
+                    locationsQuery = locationsQuery.eq(tagFilter.field, tagFilter.value);
+                });
             }
-            const locationsData = allLocationsData;
+            const { data: locationsData, error: locationsError } = await locationsQuery;
+            if (locationsError) throw locationsError;
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
-            // console.log(`✅ Locations: Fetched ${locationsData.length} total records in ${locationBatches} batch(es), found ${locations.length} unique locations`);
             
-            // Death Toll query with pagination to fetch all records
-            // console.log('Querying death toll values with pagination...');
-            let allDeathsTollData = [];
-            start = 0;
-            let deathsTollBatches = 0;
-            while (true) {
-                let query = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ').range(start, start + batchSize - 1);
-                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                // Apply tag filters
-                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
-                    selectedFilters.tagFilters.forEach(tagFilter => {
-                        query = query.eq(tagFilter.field, tagFilter.value);
-                    });
-                }
-                const { data: batchData, error } = await query;
-                if (error) throw error;
-                deathsTollBatches++;
-                allDeathsTollData.push(...batchData);
-                // console.log(`📦 Death toll batch ${deathsTollBatches}: fetched ${batchData.length} records (total so far: ${allDeathsTollData.length})`);
-                if (batchData.length < batchSize) break;
-                start += batchSize;
+            // Death Toll query - DISTINCT
+            let deathsTollQuery = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ');
+            if (selectedFilters.year) deathsTollQuery = deathsTollQuery.eq('year', selectedFilters.year);
+            if (selectedFilters.location) deathsTollQuery = deathsTollQuery.eq('location_name', selectedFilters.location);
+            if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                selectedFilters.tagFilters.forEach(tagFilter => {
+                    deathsTollQuery = deathsTollQuery.eq(tagFilter.field, tagFilter.value);
+                });
             }
-            const deathsTollData = allDeathsTollData;
+            const { data: deathsTollData, error: deathsTollError } = await deathsTollQuery;
+            if (deathsTollError) throw deathsTollError;
             const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
-            // console.log(`✅ Death Toll: Fetched ${deathsTollData.length} total records in ${deathsTollBatches} batch(es), found ${deathsToll.length} unique values`);
             
-            // Event Names query with pagination to fetch all records
-            // console.log('Querying event names with pagination...');
-            let allEventNamesData = [];
-            start = 0;
-            let eventNameBatches = 0;
-            while (true) {
-                let query = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '').range(start, start + batchSize - 1);
-                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
-                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
-                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
-                const { data: batchData, error } = await query;
-                if (error) throw error;
-                eventNameBatches++;
-                allEventNamesData.push(...batchData);
-                // console.log(`📦 Event name batch ${eventNameBatches}: fetched ${batchData.length} records (total so far: ${allEventNamesData.length})`);
-                if (batchData.length < batchSize) break;
-                start += batchSize;
-            }
-            const eventNamesData = allEventNamesData;
+            // Event Names query - DISTINCT
+            let eventNamesQuery = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '');
+            if (selectedFilters.year) eventNamesQuery = eventNamesQuery.eq('year', selectedFilters.year);
+            if (selectedFilters.location) eventNamesQuery = eventNamesQuery.eq('location_name', selectedFilters.location);
+            if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            const { data: eventNamesData, error: eventNamesError } = await eventNamesQuery;
+            if (eventNamesError) throw eventNamesError;
             const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
-            // console.log(`✅ Event Names: Fetched ${eventNamesData.length} total records in ${eventNameBatches} batch(es), found ${eventNames.length} unique event names`);
             
             this.filterOptions = { years, locations, deathsToll, eventNames };
+            
+            // Cache the results if no filters are applied
+            if (Object.keys(selectedFilters).length === 0) {
+                this.filterOptionsCache = this.filterOptions;
+                this.filterOptionsCacheTimestamp = Date.now();
+                if (window.DEBUG_MODE) console.log('✅ Filter options cached');
+            }
             
             this.populateFilterDropdowns(selectedFilters);
             
@@ -812,6 +770,21 @@ class FloodMapApp {
             this.showFilterError('Unable to load filter options. Please check your connection.');
             this.addFilterErrorState();
         }
+    }
+    
+    isFilterCacheValid() {
+        if (!this.filterOptionsCache || !this.filterOptionsCacheTimestamp) {
+            return false;
+        }
+        const now = Date.now();
+        const cacheAge = now - this.filterOptionsCacheTimestamp;
+        return cacheAge < this.FILTER_CACHE_TTL;
+    }
+    
+    invalidateFilterCache() {
+        this.filterOptionsCache = null;
+        this.filterOptionsCacheTimestamp = null;
+        if (window.DEBUG_MODE) console.log('🗑️ Filter cache invalidated');
     }
     
     _getUniqueValuesWithCount(data, fieldName) {
@@ -1444,6 +1417,9 @@ class FloodMapApp {
         if (activeFiltersSummary) {
             activeFiltersSummary.classList.add('hidden');
         }
+
+        // Invalidate cache to refresh filter options
+        this.invalidateFilterCache();
 
         // Reload all filter options without any filters
         await this.loadFilterOptions({});
