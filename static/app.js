@@ -659,7 +659,7 @@ class FloodMapApp {
     initSearchableFilters(searchInput, hiddenSelect, datalistId) {
         // This method is no longer used with custom dropdowns
         // Keeping stub for backwards compatibility
-
+    }
 
     async loadFilterOptions(selectedFilters = {}) {
         if (window.DEBUG_MODE) console.log('Loading filter options with filters:', selectedFilters);
