@@ -459,14 +459,47 @@ h6 { font-size: 0.75rem; }
     background-color: rgba(51, 122, 183, 0.08);
 }
 
+/*
+ * Z-INDEX HIERARCHY
+ * =================
+ * This application uses a structured z-index system to ensure proper layering of UI elements.
+ * Always reference this hierarchy when adding new elements to prevent stacking conflicts.
+ *
+ * Tier 0 (z-index: 1-10): Base interactive elements
+ *   - Dropdown containers (z-index: 0)
+ *   - Dropdown toggles (z-index: 1)
+ *   - Tab buttons (z-index: 1)
+ *   - Active tab buttons (z-index: 2)
+ *   - Filter loading overlays (z-index: 10)
+ *
+ * Tier 1 (z-index: 100-200): Structural elements
+ *   - Mobile controls (z-index: 100)
+ *   - Mobile sidebar close button (z-index: 100)
+ *   - Header elements (z-index: 100-200)
+ *
+ * Tier 2 (z-index: 1000): Tooltips and info popups
+ *   - Map loading indicator (z-index: 1000)
+ *   - Measurement info tooltip (z-index: 1000)
+ *
+ * Tier 3 (z-index: 1050): Secondary dropdowns
+ *   - User menu dropdown (z-index: 1050)
+ *
+ * Tier 4 (z-index: 1100): Primary dropdowns
+ *   - Filter dropdowns (z-index: 1100)
+ *
+ * Tier 5 (z-index: 10000+): Critical overlays
+ *   - Modals (z-index: 10000)
+ *   - Error banners (z-index: 10000)
+ *   - Success banners (z-index: 10000)
+ */
+
 /* Custom Dropdown Component */
 .custom-dropdown {
     position: relative;
     width: 100%;
     display: flex;
     align-items: stretch;
-    z-index: 1;
-    isolation: isolate;
+    z-index: 0;
 }
 
 /* Dropdown open state */
@@ -565,6 +598,9 @@ h6 { font-size: 0.75rem; }
 }
 
 /* Dropdown Menu */
+/* Dropdown menu z-index: 1100 (Tier 4 - Primary Dropdowns).
+ * Must appear above tooltips (1000) and user menu (1050) but below modals and banners (10000+).
+ * The high z-index ensures dropdowns are not obscured by other UI elements when open. */
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 2px);
@@ -576,7 +612,7 @@ h6 { font-size: 0.75rem; }
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
     max-height: 300px;
     overflow: visible;
-    z-index: 1050;
+    z-index: 1100;
     display: none;
     opacity: 0;
     transform: translateY(-5px);
@@ -2030,7 +2066,7 @@ body::-webkit-scrollbar-thumb:hover {
     box-shadow: var(--shadow-lg);
     padding: var(--spacing-sm) 0;
     min-width: 150px;
-    z-index: 1000;
+    z-index: 1050;
 }
 
 .user-menu-item {
@@ -2311,7 +2347,7 @@ body::-webkit-scrollbar-thumb:hover {
     .dropdown-menu {
         max-height: 300px;
         border-radius: 0;
-        z-index: 1050;
+        z-index: 1100;
     }
     
     .dropdown-option {
