@@ -486,6 +486,8 @@ h6 { font-size: 0.75rem; }
  *
  * Tier 4 (z-index: 1100): Primary dropdowns
  *   - Filter dropdowns (z-index: 1100)
+ *   - Uses standard absolute positioning with overflow: hidden
+ *   - No special containment or isolation properties needed
  *
  * Tier 5 (z-index: 10000+): Critical overlays
  *   - Modals (z-index: 10000)
@@ -597,22 +599,7 @@ h6 { font-size: 0.75rem; }
     transform: rotate(180deg);
 }
 
-/* Dropdown Menu */
-/* DROPDOWN CONTAINMENT STRATEGY
- * ==============================
- * The dropdown menu uses multiple CSS properties to ensure proper containment:
- * - contain: layout style; - Creates a formatting context and isolates layout
- * - isolation: isolate; - Creates a new stacking context for children
- * - will-change: transform, opacity; - Promotes to compositor layer
- * - transform: translateZ(0); - Forces GPU acceleration (fallback)
- * - overflow: hidden; - Clips overflowing content
- * 
- * This multi-layered approach ensures dropdown options stay within their container
- * and don't overlap with other UI elements, even when the sidebar scrolls.
- */
-/* Dropdown menu z-index: 1100 (Tier 4 - Primary Dropdowns).
- * Must appear above tooltips (1000) and user menu (1050) but below modals and banners (10000+).
- * The high z-index ensures dropdowns are not obscured by other UI elements when open. */
+/* Dropdown Menu - Uses standard absolute positioning with z-index: 1100 */
 .dropdown-menu {
     position: absolute;
     top: calc(100% + 2px);
@@ -625,10 +612,6 @@ h6 { font-size: 0.75rem; }
     max-height: min(300px, 40vh);
     overflow: hidden;
     z-index: 1100;
-    isolation: isolate;
-    contain: layout style;
-    will-change: transform, opacity;
-    transform: translateZ(0);
     display: none;
     opacity: 0;
     transition: all var(--transition-base);
@@ -638,7 +621,7 @@ h6 { font-size: 0.75rem; }
 .dropdown-menu.show {
     display: block;
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
 }
 
 .dropdown-menu:not(.show) {
@@ -657,7 +640,6 @@ h6 { font-size: 0.75rem; }
     overflow-y: auto;
     padding: 0.25rem 0;
     scroll-behavior: smooth;
-    contain: layout;
 }
 
 /* Dropdown Options */
