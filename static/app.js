@@ -18,6 +18,12 @@ class FloodMapApp {
         this.modalElements = null; // Cache modal DOM elements
         this.popupTemplate = null; // Cache popup template
         
+        // Tag-based search filter properties
+        this.tagFilters = []; // Array of {field, value} objects
+        this.searchDebounceTimer = null; // For search input debouncing
+        this.currentSuggestions = []; // Cache current autocomplete suggestions
+        this.selectedSuggestionIndex = -1; // For keyboard navigation
+        
         this.init();
     }
     
@@ -178,6 +184,9 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             this.clearFilters();
         });
         
+        // Initialize tag-based search filter listeners
+        this.initTagSearchListeners();
+        
         // Modal controls with event delegation
         const modal = document.getElementById('flood-modal');
         const closeBtn = document.querySelector('.close');
@@ -291,6 +300,283 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         }
     }
 
+    // Tag-based search filter methods
+    initTagSearchListeners() {
+        const fieldSelector = document.getElementById('tag-field-selector');
+        const searchInput = document.getElementById('tag-search-input');
+        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
+
+        // Field selector change - enable/disable input and clear state
+        fieldSelector.addEventListener('change', () => {
+            if (fieldSelector.value) {
+                searchInput.disabled = false;
+                searchInput.value = '';
+                searchInput.classList.remove('has-value');
+                this.hideSuggestions();
+            } else {
+                searchInput.disabled = true;
+                searchInput.value = '';
+                searchInput.classList.remove('has-value');
+                this.hideSuggestions();
+            }
+        });
+
+        // Search input with debouncing
+        searchInput.addEventListener('input', () => {
+            clearTimeout(this.searchDebounceTimer);
+            this.searchDebounceTimer = setTimeout(() => {
+                this.fetchTagSuggestions(searchInput.value);
+            }, 300);
+        });
+
+        // Show suggestions on focus if cached
+        searchInput.addEventListener('focus', () => {
+            if (this.currentSuggestions.length > 0 && searchInput.value.length >= 2) {
+                suggestionsDropdown.classList.remove('hidden');
+            }
+        });
+
+        // Hide suggestions on blur (with delay to allow click)
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                this.hideSuggestions();
+            }, 200);
+        });
+
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', (e) => {
+            if (suggestionsDropdown.classList.contains('hidden')) return;
+
+            switch (e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    this.navigateSuggestions(1);
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    this.navigateSuggestions(-1);
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (this.selectedSuggestionIndex >= 0) {
+                        const selectedItem = suggestionsDropdown.children[this.selectedSuggestionIndex];
+                        if (selectedItem) {
+                            selectedItem.click();
+                        }
+                    }
+                    break;
+                case 'Escape':
+                    e.preventDefault();
+                    this.hideSuggestions();
+                    break;
+            }
+        });
+
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+                this.hideSuggestions();
+            }
+        });
+    }
+
+    async fetchTagSuggestions(searchText) {
+        const fieldSelector = document.getElementById('tag-field-selector');
+        const field = fieldSelector.value;
+
+        if (!field || !searchText || searchText.length < 2) {
+            this.hideSuggestions();
+            return;
+        }
+
+        if (!window.supabaseClient) {
+            console.error('Database connection not initialized');
+            return;
+        }
+
+        try {
+            // Build query with selected field
+            let query = window.supabaseClient
+                .from('floods')
+                .select(field)
+                .not(field, 'is', null)
+                .ilike(field, `%${searchText}%`);
+
+            // Apply existing active filters for cascading behavior
+            const yearFilter = document.getElementById('year-filter').value;
+            const locationFilter = document.getElementById('location-filter').value;
+            const deathsTollFilter = document.getElementById('deaths-toll-filter').value;
+
+            if (yearFilter) query = query.eq('year', yearFilter);
+            if (locationFilter) query = query.eq('location_name', locationFilter);
+            if (deathsTollFilter) query = query.eq('deaths_toll', deathsTollFilter);
+
+            // Apply existing tag filters (exclude current field to avoid conflicts)
+            this.tagFilters.forEach(tagFilter => {
+                if (tagFilter.field !== field) {
+                    query = query.eq(tagFilter.field, tagFilter.value);
+                }
+            });
+
+            // Fetch with pagination
+            let allData = [];
+            let start = 0;
+            const limit = 1000;
+
+            while (true) {
+                const { data, error } = await query.range(start, start + limit - 1);
+
+                if (error) throw error;
+                if (!data || data.length === 0) break;
+
+                allData = allData.concat(data);
+                if (data.length < limit) break;
+                start += limit;
+            }
+
+            // Extract unique values
+            const uniqueValues = this._getUniqueValuesWithCount(allData, field);
+            const suggestions = uniqueValues.slice(0, 10).map(item => item.value);
+
+            this.displayTagSuggestions(suggestions, field);
+
+        } catch (error) {
+            console.error('Error fetching tag suggestions:', error);
+            this.hideSuggestions();
+        }
+    }
+
+    displayTagSuggestions(suggestions, field) {
+        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
+        
+        this.currentSuggestions = suggestions;
+        suggestionsDropdown.innerHTML = '';
+
+        if (suggestions.length === 0) {
+            this.hideSuggestions();
+            return;
+        }
+
+        suggestions.forEach((suggestion, index) => {
+            const item = document.createElement('div');
+            item.className = 'tag-suggestion-item';
+            item.textContent = suggestion;
+            item.setAttribute('role', 'option');
+            item.dataset.index = index;
+
+            item.addEventListener('click', () => {
+                this.selectTagFilter(field, suggestion);
+            });
+
+            suggestionsDropdown.appendChild(item);
+        });
+
+        suggestionsDropdown.classList.remove('hidden');
+        this.selectedSuggestionIndex = -1;
+    }
+
+    navigateSuggestions(direction) {
+        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
+        const items = suggestionsDropdown.querySelectorAll('.tag-suggestion-item');
+
+        if (items.length === 0) return;
+
+        // Remove current selection
+        if (this.selectedSuggestionIndex >= 0) {
+            items[this.selectedSuggestionIndex].classList.remove('selected');
+        }
+
+        // Update index
+        this.selectedSuggestionIndex += direction;
+
+        // Wrap around
+        if (this.selectedSuggestionIndex < 0) {
+            this.selectedSuggestionIndex = items.length - 1;
+        } else if (this.selectedSuggestionIndex >= items.length) {
+            this.selectedSuggestionIndex = 0;
+        }
+
+        // Apply selection
+        items[this.selectedSuggestionIndex].classList.add('selected');
+        items[this.selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
+    }
+
+    selectTagFilter(field, value) {
+        // Check for duplicates
+        const exists = this.tagFilters.some(f => f.field === field && f.value === value);
+        if (exists) {
+            this.hideSuggestions();
+            return;
+        }
+
+        // Add to tag filters
+        this.tagFilters.push({ field, value });
+
+        // Clear search input
+        const searchInput = document.getElementById('tag-search-input');
+        searchInput.value = '';
+        searchInput.classList.add('has-value');
+
+        // Hide suggestions
+        this.hideSuggestions();
+
+        // Trigger filter update
+        this.handleFilterChange();
+    }
+
+    removeTagFilter(field, value) {
+        this.tagFilters = this.tagFilters.filter(f => !(f.field === field && f.value === value));
+
+        // Remove has-value class if no tag filters remain
+        if (this.tagFilters.length === 0) {
+            const searchInput = document.getElementById('tag-search-input');
+            searchInput.classList.remove('has-value');
+        }
+
+        // Trigger filter update
+        this.handleFilterChange();
+    }
+
+    hideSuggestions() {
+        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
+        suggestionsDropdown.classList.add('hidden');
+        this.currentSuggestions = [];
+        this.selectedSuggestionIndex = -1;
+    }
+
+    getFieldDisplayName(databaseName) {
+        const mapping = {
+            'location_name': 'Location',
+            'cause_of_flood': 'Cause',
+            'flood_event_name': 'Event Name',
+            'source': 'Source'
+        };
+        return mapping[databaseName] || databaseName;
+    }
+
+    async handleFilterChange() {
+        // Skip if already updating
+        if (this.isUpdatingFilters) return;
+        this.isUpdatingFilters = true;
+
+        const yearFilter = document.getElementById('year-filter');
+        const locationFilter = document.getElementById('location-filter');
+        const deathsTollFilter = document.getElementById('deaths-toll-filter');
+
+        const selectedFilters = {
+            year: yearFilter.value,
+            location: locationFilter.value,
+            deathsToll: deathsTollFilter.value,
+            tagFilters: this.tagFilters
+        };
+
+        try {
+            await this.loadFilterOptions(selectedFilters);
+            this.applyFilters();
+        } finally {
+            this.isUpdatingFilters = false;
+        }
+    }
 
 
     async loadFilterOptions(selectedFilters = {}) {
@@ -324,6 +610,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
                 let query = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).range(start, start + batchSize - 1);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
                 if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
+                // Apply tag filters
+                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                    selectedFilters.tagFilters.forEach(tagFilter => {
+                        query = query.eq(tagFilter.field, tagFilter.value);
+                    });
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 allYearsData.push(...batchData);
@@ -349,6 +641,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
                 let query = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null).range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
+                // Apply tag filters
+                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                    selectedFilters.tagFilters.forEach(tagFilter => {
+                        query = query.eq(tagFilter.field, tagFilter.value);
+                    });
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 locationBatches++;
@@ -371,6 +669,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
                 let query = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ').range(start, start + batchSize - 1);
                 if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
                 if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                // Apply tag filters
+                if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
+                    selectedFilters.tagFilters.forEach(tagFilter => {
+                        query = query.eq(tagFilter.field, tagFilter.value);
+                    });
+                }
                 const { data: batchData, error } = await query;
                 if (error) throw error;
                 deathsTollBatches++;
@@ -532,6 +836,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
             if (filters.deathsToll) totalQuery = totalQuery.eq('deaths_toll', filters.deathsToll);
+            // Apply tag filters
+            if (filters.tagFilters && filters.tagFilters.length > 0) {
+                filters.tagFilters.forEach(tagFilter => {
+                    totalQuery = totalQuery.eq(tagFilter.field, tagFilter.value);
+                });
+            }
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
             
@@ -539,6 +849,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
             if (filters.deathsToll) minQuery = minQuery.eq('deaths_toll', filters.deathsToll);
+            // Apply tag filters
+            if (filters.tagFilters && filters.tagFilters.length > 0) {
+                filters.tagFilters.forEach(tagFilter => {
+                    minQuery = minQuery.eq(tagFilter.field, tagFilter.value);
+                });
+            }
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
             let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
@@ -547,6 +863,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
             if (filters.deathsToll) maxQuery = maxQuery.eq('deaths_toll', filters.deathsToll);
+            // Apply tag filters
+            if (filters.tagFilters && filters.tagFilters.length > 0) {
+                filters.tagFilters.forEach(tagFilter => {
+                    maxQuery = maxQuery.eq(tagFilter.field, tagFilter.value);
+                });
+            }
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
@@ -555,6 +877,12 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
+            // Apply tag filters
+            if (filters.tagFilters && filters.tagFilters.length > 0) {
+                filters.tagFilters.forEach(tagFilter => {
+                    casualtiesQuery = casualtiesQuery.eq(tagFilter.field, tagFilter.value);
+                });
+            }
             // Note: casualties filter is NOT applied here so this stat always shows events with casualties within other selected filters
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
@@ -595,6 +923,13 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.deathsToll) query = query.eq('deaths_toll', filters.deathsToll);
+            
+            // Apply tag filters
+            if (filters.tagFilters && filters.tagFilters.length > 0) {
+                filters.tagFilters.forEach(tagFilter => {
+                    query = query.eq(tagFilter.field, tagFilter.value);
+                });
+            }
             
             query = query.limit(2000);
             
@@ -828,16 +1163,18 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const filters = {
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
-            deathsToll: document.getElementById('deaths-toll-filter').value
+            deathsToll: document.getElementById('deaths-toll-filter').value,
+            tagFilters: this.tagFilters
         };
 
         // Count active filters and apply has-value classes
-        let activeCount = 0;
+        let activeCount = this.tagFilters.length; // Start with tag filters count
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
         const deathsTollSelect = document.getElementById('deaths-toll-filter');
         
         Object.keys(filters).forEach(key => {
+            if (key === 'tagFilters') return; // Skip tagFilters in this loop
             if (!filters[key]) {
                 delete filters[key];
             } else {
@@ -896,6 +1233,35 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
                 if (filters.year) filterNames.push('Year');
                 if (filters.location) filterNames.push('Location');
                 if (filters.deathsToll) filterNames.push('Deaths');
+                
+                // Add tag filter field names
+                if (filters.tagFilters && filters.tagFilters.length > 0) {
+                    const tagFieldLabels = {
+                        location_name: 'Location',
+                        cause_of_flood: 'Cause',
+                        severity: 'Severity',
+                        casualties: 'Casualties',
+                        displaced_evacuated: 'Displaced',
+                        structures_destroyed: 'Structures',
+                        infrastructure_damage: 'Infrastructure',
+                        magnitude_height: 'Magnitude',
+                        duration_days: 'Duration',
+                        economic_cost_usd: 'Cost',
+                        environmental_impact: 'Environment',
+                        response_measures: 'Response',
+                        long_term_effects: 'Effects',
+                        cultural_historical_significance: 'Cultural',
+                        sources: 'Sources',
+                        notes: 'Notes'
+                    };
+                    
+                    filters.tagFilters.forEach(tagFilter => {
+                        const label = tagFieldLabels[tagFilter.field] || tagFilter.field;
+                        if (!filterNames.includes(label)) {
+                            filterNames.push(label);
+                        }
+                    });
+                }
                 
                 const filterText = filterNames.join(', ');
                 toggleBtn.textContent = `Filters: ${filterText}`;
@@ -990,6 +1356,8 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
         const deathsTollSelect = document.getElementById('deaths-toll-filter');
+        const tagSearchInput = document.getElementById('tag-search-input');
+        const tagSuggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
         
         yearSelect.value = '';
         locationSelect.value = '';
@@ -999,6 +1367,16 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         yearSelect.classList.remove('has-value');
         locationSelect.classList.remove('has-value');
         deathsTollSelect.classList.remove('has-value');
+        
+        // Reset tag search
+        this.tagFilters = [];
+        if (tagSearchInput) {
+            tagSearchInput.value = '';
+            tagSearchInput.classList.remove('has-value');
+        }
+        if (tagSuggestionsDropdown) {
+            tagSuggestionsDropdown.classList.add('hidden');
+        }
         
         // Hide active filters summary
         const activeFiltersSummary = document.getElementById('active-filters-summary');
@@ -1026,11 +1404,31 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const filterLabels = {
             year: 'Year',
             location: 'Location',
-            deathsToll: 'Death Toll'
+            deathsToll: 'Death Toll',
+            // Tag search field labels
+            location_name: 'Location',
+            cause_of_flood: 'Cause',
+            severity: 'Severity',
+            casualties: 'Casualties',
+            displaced_evacuated: 'Displaced/Evacuated',
+            structures_destroyed: 'Structures Destroyed',
+            infrastructure_damage: 'Infrastructure Damage',
+            magnitude_height: 'Magnitude/Height',
+            duration_days: 'Duration (Days)',
+            economic_cost_usd: 'Economic Cost (USD)',
+            environmental_impact: 'Environmental Impact',
+            response_measures: 'Response Measures',
+            long_term_effects: 'Long-term Effects',
+            cultural_historical_significance: 'Cultural/Historical Significance',
+            sources: 'Sources',
+            notes: 'Notes'
         };
         
-        // Count active filters
-        const activeCount = Object.keys(filters).length;
+        // Count active filters (including tag filters)
+        let activeCount = Object.keys(filters).filter(k => k !== 'tagFilters').length;
+        if (filters.tagFilters && filters.tagFilters.length > 0) {
+            activeCount += filters.tagFilters.length;
+        }
         
         if (activeCount === 0) {
             // Hide summary if no filters active
@@ -1041,7 +1439,10 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         // Show summary and create badges
         activeFiltersSummary.classList.remove('hidden');
         
+        // Create badges for standard filters
         Object.keys(filters).forEach(filterKey => {
+            if (filterKey === 'tagFilters') return; // Skip tagFilters array, handle separately
+            
             const filterValue = filters[filterKey];
             const filterLabel = filterLabels[filterKey] || filterKey;
             
@@ -1071,6 +1472,39 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             
             activeFiltersList.appendChild(badge);
         });
+        
+        // Create badges for tag filters
+        if (filters.tagFilters && filters.tagFilters.length > 0) {
+            filters.tagFilters.forEach(tagFilter => {
+                const filterLabel = filterLabels[tagFilter.field] || tagFilter.field;
+                
+                // Create badge element
+                const badge = document.createElement('div');
+                badge.className = 'filter-badge';
+                
+                // Create badge content
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'filter-badge-label';
+                labelSpan.textContent = `${filterLabel}:`;
+                
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'filter-badge-value';
+                valueSpan.textContent = this.escapeHtml(tagFilter.value);
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'filter-badge-remove';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = `Remove ${filterLabel} filter`;
+                removeBtn.setAttribute('aria-label', `Remove ${filterLabel} filter`);
+                removeBtn.addEventListener('click', () => this.removeTagFilter(tagFilter.field, tagFilter.value));
+                
+                badge.appendChild(labelSpan);
+                badge.appendChild(valueSpan);
+                badge.appendChild(removeBtn);
+                
+                activeFiltersList.appendChild(badge);
+            });
+        }
     }
     
     async clearIndividualFilter(filterName) {

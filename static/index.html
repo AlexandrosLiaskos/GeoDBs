@@ -177,6 +177,27 @@
                                 </select>
                             </div>
                             
+                            <!-- Tag-Based Search Filter -->
+                            <div class="filter-group">
+                                <label for="tag-field-selector">Search by Field:</label>
+                                <div class="tag-search-container">
+                                    <select id="tag-field-selector" aria-label="Select field to search">
+                                        <option value="">Select field...</option>
+                                        <option value="location_name">Location</option>
+                                        <option value="cause_of_flood">Cause</option>
+                                        <option value="flood_event_name">Event Name</option>
+                                        <option value="source">Source</option>
+                                    </select>
+                                    <input type="text" 
+                                           id="tag-search-input" 
+                                           placeholder="Type to search..." 
+                                           aria-label="Search within selected field"
+                                           autocomplete="off"
+                                           disabled>
+                                    <div id="tag-suggestions-dropdown" class="tag-suggestions-dropdown hidden" role="listbox" aria-label="Search suggestions"></div>
+                                </div>
+                            </div>
+                            
                             <!-- Active Filters Summary -->
                             <div id="active-filters-summary" class="active-filters-summary hidden">
                                 <h4>Active Filters:</h4>

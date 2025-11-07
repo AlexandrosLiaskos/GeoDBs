@@ -456,6 +456,102 @@ h6 { font-size: 0.75rem; }
     background-color: rgba(51, 122, 183, 0.08);
 }
 
+/* Tag-Based Search Filter */
+.tag-search-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    position: relative;
+}
+
+.tag-search-container select {
+    width: 100%;
+}
+
+#tag-search-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--background-primary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    outline: none;
+    min-height: 2.75rem;
+}
+
+#tag-search-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--background-secondary);
+}
+
+#tag-search-input:focus {
+    border-bottom-color: var(--primary-color);
+    background-color: var(--background-primary);
+    box-shadow: 0 2px 0 0 var(--primary-color);
+}
+
+#tag-search-input:hover:not(:disabled) {
+    border-bottom-color: var(--text-primary);
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+#tag-search-input.has-value {
+    border-bottom: 2px solid var(--primary-color);
+    border-left: 3px solid var(--primary-color);
+    background-color: rgba(51, 122, 183, 0.05);
+    padding-left: calc(1rem - 3px);
+}
+
+#tag-search-input.has-value:hover {
+    background-color: rgba(51, 122, 183, 0.08);
+}
+
+.tag-suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 0;
+}
+
+.tag-suggestions-dropdown.hidden {
+    display: none;
+}
+
+.tag-suggestion-item {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.tag-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.tag-suggestion-item:hover {
+    background-color: rgba(51, 122, 183, 0.08);
+    color: var(--primary-color);
+}
+
+.tag-suggestion-item.selected {
+    background-color: rgba(51, 122, 183, 0.12);
+    color: var(--primary-color);
+}
+
 /* Active Filters Summary Panel */
 .active-filters-summary {
     margin-top: var(--spacing-lg);
@@ -2065,6 +2161,20 @@ body::-webkit-scrollbar-thumb:hover {
     }
     
     .filter-group select {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    #tag-search-input {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
+    }
+    
+    .tag-suggestions-dropdown {
+        max-height: 200px;
+    }
+    
+    .tag-suggestion-item {
         padding: 0.6rem 0.8rem;
         font-size: 0.8rem;
     }

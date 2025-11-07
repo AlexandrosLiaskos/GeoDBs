@@ -8,7 +8,7 @@
     const config = {
         defaultSize: 6,
         debounceDelay: 150,
-        excludeSelectors: ['#year-filter', '#location-filter', '#deaths-toll-filter'], // Selectors to exclude from limiting
+        excludeSelectors: ['#year-filter', '#location-filter', '#deaths-toll-filter', '#tag-field-selector'], // Selectors to exclude from limiting
     };
     
     // Cache for processed selects to avoid redundant operations
