@@ -18,11 +18,8 @@ class FloodMapApp {
         this.modalElements = null; // Cache modal DOM elements
         this.popupTemplate = null; // Cache popup template
         
-        // Tag-based search filter properties
-        this.tagFilters = []; // Array of {field, value} objects
-        this.searchDebounceTimer = null; // For search input debouncing
-        this.currentSuggestions = []; // Cache current autocomplete suggestions
-        this.selectedSuggestionIndex = -1; // For keyboard navigation
+        // Search input debouncing
+        this.searchDebounceTimer = null;
         
         this.init();
     }
@@ -142,19 +139,30 @@ class FloodMapApp {
         }
         
         // Filter controls with interactive filtering
-const yearFilter = document.getElementById('year-filter');
-const locationFilter = document.getElementById('location-filter');
-const deathsTollFilter = document.getElementById('deaths-toll-filter');        // Single handler for all filter changes to avoid redundancy
+        const yearFilter = document.getElementById('year-filter');
+        const locationFilter = document.getElementById('location-filter');
+        const deathsTollFilter = document.getElementById('deaths-toll-filter');
+        const eventNameFilter = document.getElementById('event-name-filter');
+        
+        // Search inputs for searchable filters
+        const locationSearch = document.getElementById('location-search');
+        const deathsTollSearch = document.getElementById('deaths-toll-search');
+        const eventNameSearch = document.getElementById('event-name-search');
+        
+        // Single handler for all filter changes to avoid redundancy
         const handleFilterChange = async () => {
             // Skip if we're already updating
             if (this.isUpdatingFilters) return;
             this.isUpdatingFilters = true;
 
-        const selectedFilters = {
-            year: yearFilter.value,
-            location: locationFilter.value,
-            deathsToll: deathsTollFilter.value
-        };            try {
+            const selectedFilters = {
+                year: yearFilter.value,
+                location: locationFilter.value,
+                deathsToll: deathsTollFilter.value,
+                eventName: eventNameFilter.value
+            };
+            
+            try {
                 // Update available options in other filters
                 await this.loadFilterOptions(selectedFilters);
                 // Apply the filter to the map
@@ -164,7 +172,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             }
         };
 
-        // Add change listeners with debouncing
+        // Add change listeners to hidden selects with debouncing
         yearFilter.addEventListener('change', () => {
             clearTimeout(this.filterUpdateTimer);
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
@@ -180,12 +188,19 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
         });
         
+        eventNameFilter.addEventListener('change', () => {
+            clearTimeout(this.filterUpdateTimer);
+            this.filterUpdateTimer = setTimeout(handleFilterChange, 300);
+        });
+        
+        // Initialize searchable filter inputs
+        this.initSearchableFilters(locationSearch, locationFilter, 'location-datalist');
+        this.initSearchableFilters(deathsTollSearch, deathsTollFilter, 'deaths-toll-datalist');
+        this.initSearchableFilters(eventNameSearch, eventNameFilter, 'event-name-datalist');
+        
         document.getElementById('clear-filters').addEventListener('click', () => {
             this.clearFilters();
         });
-        
-        // Initialize tag-based search filter listeners
-        this.initTagSearchListeners();
         
         // Modal controls with event delegation
         const modal = document.getElementById('flood-modal');
@@ -300,282 +315,73 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         }
     }
 
-    // Tag-based search filter methods
-    initTagSearchListeners() {
-        const fieldSelector = document.getElementById('tag-field-selector');
-        const searchInput = document.getElementById('tag-search-input');
-        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
-
-        // Field selector change - enable/disable input and clear state
-        fieldSelector.addEventListener('change', () => {
-            if (fieldSelector.value) {
-                searchInput.disabled = false;
-                searchInput.value = '';
-                searchInput.classList.remove('has-value');
-                this.hideSuggestions();
-            } else {
-                searchInput.disabled = true;
-                searchInput.value = '';
-                searchInput.classList.remove('has-value');
-                this.hideSuggestions();
-            }
-        });
-
-        // Search input with debouncing
+    // Searchable filter initialization
+    initSearchableFilters(searchInput, hiddenSelect, datalistId) {
+        if (!searchInput || !hiddenSelect) return;
+        
+        const datalist = document.getElementById(datalistId);
+        
+        // Input change handler with debouncing
         searchInput.addEventListener('input', () => {
             clearTimeout(this.searchDebounceTimer);
             this.searchDebounceTimer = setTimeout(() => {
-                this.fetchTagSuggestions(searchInput.value);
+                const searchValue = searchInput.value.trim();
+                
+                if (!searchValue) {
+                    // Clear selection
+                    hiddenSelect.value = '';
+                    hiddenSelect.classList.remove('has-value');
+                    searchInput.classList.remove('has-value');
+                    return;
+                }
+                
+                // Find matching option in datalist
+                const options = datalist.querySelectorAll('option');
+                let exactMatch = null;
+                let partialMatch = null;
+                
+                for (const option of options) {
+                    if (option.value === searchValue) {
+                        exactMatch = option.value;
+                        break;
+                    } else if (option.value.toLowerCase().includes(searchValue.toLowerCase())) {
+                        if (!partialMatch) partialMatch = option.value;
+                    }
+                }
+                
+                // Update hidden select
+                const matchedValue = exactMatch || partialMatch || searchValue;
+                if (exactMatch || partialMatch) {
+                    hiddenSelect.value = matchedValue;
+                    hiddenSelect.classList.add('has-value');
+                    searchInput.classList.add('has-value');
+                    // Trigger change event on hidden select
+                    hiddenSelect.dispatchEvent(new Event('change'));
+                }
             }, 300);
         });
-
-        // Show suggestions on focus if cached
-        searchInput.addEventListener('focus', () => {
-            if (this.currentSuggestions.length > 0 && searchInput.value.length >= 2) {
-                suggestionsDropdown.classList.remove('hidden');
-            }
-        });
-
-        // Hide suggestions on blur (with delay to allow click)
-        searchInput.addEventListener('blur', () => {
-            setTimeout(() => {
-                this.hideSuggestions();
-            }, 200);
-        });
-
-        // Keyboard navigation
-        searchInput.addEventListener('keydown', (e) => {
-            if (suggestionsDropdown.classList.contains('hidden')) return;
-
-            switch (e.key) {
-                case 'ArrowDown':
-                    e.preventDefault();
-                    this.navigateSuggestions(1);
-                    break;
-                case 'ArrowUp':
-                    e.preventDefault();
-                    this.navigateSuggestions(-1);
-                    break;
-                case 'Enter':
-                    e.preventDefault();
-                    if (this.selectedSuggestionIndex >= 0) {
-                        const selectedItem = suggestionsDropdown.children[this.selectedSuggestionIndex];
-                        if (selectedItem) {
-                            selectedItem.click();
-                        }
-                    }
-                    break;
-                case 'Escape':
-                    e.preventDefault();
-                    this.hideSuggestions();
-                    break;
-            }
-        });
-
-        // Close suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
-                this.hideSuggestions();
-            }
-        });
-    }
-
-    async fetchTagSuggestions(searchText) {
-        const fieldSelector = document.getElementById('tag-field-selector');
-        const field = fieldSelector.value;
-
-        if (!field || !searchText || searchText.length < 2) {
-            this.hideSuggestions();
-            return;
-        }
-
-        if (!window.supabaseClient) {
-            console.error('Database connection not initialized');
-            return;
-        }
-
-        try {
-            // Build query with selected field
-            let query = window.supabaseClient
-                .from('floods')
-                .select(field)
-                .not(field, 'is', null)
-                .ilike(field, `%${searchText}%`);
-
-            // Apply existing active filters for cascading behavior
-            const yearFilter = document.getElementById('year-filter').value;
-            const locationFilter = document.getElementById('location-filter').value;
-            const deathsTollFilter = document.getElementById('deaths-toll-filter').value;
-
-            if (yearFilter) query = query.eq('year', yearFilter);
-            if (locationFilter) query = query.eq('location_name', locationFilter);
-            if (deathsTollFilter) query = query.eq('deaths_toll', deathsTollFilter);
-
-            // Apply existing tag filters (exclude current field to avoid conflicts)
-            this.tagFilters.forEach(tagFilter => {
-                if (tagFilter.field !== field) {
-                    query = query.eq(tagFilter.field, tagFilter.value);
-                }
-            });
-
-            // Fetch with pagination
-            let allData = [];
-            let start = 0;
-            const limit = 1000;
-
-            while (true) {
-                const { data, error } = await query.range(start, start + limit - 1);
-
-                if (error) throw error;
-                if (!data || data.length === 0) break;
-
-                allData = allData.concat(data);
-                if (data.length < limit) break;
-                start += limit;
-            }
-
-            // Extract unique values
-            const uniqueValues = this._getUniqueValuesWithCount(allData, field);
-            const suggestions = uniqueValues.slice(0, 10).map(item => item.value);
-
-            this.displayTagSuggestions(suggestions, field);
-
-        } catch (error) {
-            console.error('Error fetching tag suggestions:', error);
-            this.hideSuggestions();
-        }
-    }
-
-    displayTagSuggestions(suggestions, field) {
-        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
         
-        this.currentSuggestions = suggestions;
-        suggestionsDropdown.innerHTML = '';
-
-        if (suggestions.length === 0) {
-            this.hideSuggestions();
-            return;
-        }
-
-        suggestions.forEach((suggestion, index) => {
-            const item = document.createElement('div');
-            item.className = 'tag-suggestion-item';
-            item.textContent = suggestion;
-            item.setAttribute('role', 'option');
-            item.dataset.index = index;
-
-            item.addEventListener('click', () => {
-                this.selectTagFilter(field, suggestion);
-            });
-
-            suggestionsDropdown.appendChild(item);
+        // Clear on Escape key
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                searchInput.value = '';
+                hiddenSelect.value = '';
+                hiddenSelect.classList.remove('has-value');
+                searchInput.classList.remove('has-value');
+                hiddenSelect.dispatchEvent(new Event('change'));
+            }
         });
-
-        suggestionsDropdown.classList.remove('hidden');
-        this.selectedSuggestionIndex = -1;
-    }
-
-    navigateSuggestions(direction) {
-        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
-        const items = suggestionsDropdown.querySelectorAll('.tag-suggestion-item');
-
-        if (items.length === 0) return;
-
-        // Remove current selection
-        if (this.selectedSuggestionIndex >= 0) {
-            items[this.selectedSuggestionIndex].classList.remove('selected');
-        }
-
-        // Update index
-        this.selectedSuggestionIndex += direction;
-
-        // Wrap around
-        if (this.selectedSuggestionIndex < 0) {
-            this.selectedSuggestionIndex = items.length - 1;
-        } else if (this.selectedSuggestionIndex >= items.length) {
-            this.selectedSuggestionIndex = 0;
-        }
-
-        // Apply selection
-        items[this.selectedSuggestionIndex].classList.add('selected');
-        items[this.selectedSuggestionIndex].scrollIntoView({ block: 'nearest' });
-    }
-
-    selectTagFilter(field, value) {
-        // Check for duplicates
-        const exists = this.tagFilters.some(f => f.field === field && f.value === value);
-        if (exists) {
-            this.hideSuggestions();
-            return;
-        }
-
-        // Add to tag filters
-        this.tagFilters.push({ field, value });
-
-        // Clear search input
-        const searchInput = document.getElementById('tag-search-input');
-        searchInput.value = '';
-        searchInput.classList.add('has-value');
-
-        // Hide suggestions
-        this.hideSuggestions();
-
-        // Trigger filter update
-        this.handleFilterChange();
-    }
-
-    removeTagFilter(field, value) {
-        this.tagFilters = this.tagFilters.filter(f => !(f.field === field && f.value === value));
-
-        // Remove has-value class if no tag filters remain
-        if (this.tagFilters.length === 0) {
-            const searchInput = document.getElementById('tag-search-input');
-            searchInput.classList.remove('has-value');
-        }
-
-        // Trigger filter update
-        this.handleFilterChange();
-    }
-
-    hideSuggestions() {
-        const suggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
-        suggestionsDropdown.classList.add('hidden');
-        this.currentSuggestions = [];
-        this.selectedSuggestionIndex = -1;
-    }
-
-    getFieldDisplayName(databaseName) {
-        const mapping = {
-            'location_name': 'Location',
-            'cause_of_flood': 'Cause',
-            'flood_event_name': 'Event Name',
-            'source': 'Source'
-        };
-        return mapping[databaseName] || databaseName;
-    }
-
-    async handleFilterChange() {
-        // Skip if already updating
-        if (this.isUpdatingFilters) return;
-        this.isUpdatingFilters = true;
-
-        const yearFilter = document.getElementById('year-filter');
-        const locationFilter = document.getElementById('location-filter');
-        const deathsTollFilter = document.getElementById('deaths-toll-filter');
-
-        const selectedFilters = {
-            year: yearFilter.value,
-            location: locationFilter.value,
-            deathsToll: deathsTollFilter.value,
-            tagFilters: this.tagFilters
-        };
-
-        try {
-            await this.loadFilterOptions(selectedFilters);
-            this.applyFilters();
-        } finally {
-            this.isUpdatingFilters = false;
-        }
+        
+        // Auto-select on exact match from datalist
+        searchInput.addEventListener('change', () => {
+            const searchValue = searchInput.value.trim();
+            if (searchValue) {
+                hiddenSelect.value = searchValue;
+                hiddenSelect.classList.add('has-value');
+                searchInput.classList.add('has-value');
+                hiddenSelect.dispatchEvent(new Event('change'));
+            }
+        });
     }
 
 
@@ -593,7 +399,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         
         try {
             // Show loading state on filter dropdowns
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter, #event-name-filter');
             selects.forEach(s => s.style.opacity = '0.6');
             this.showFilterLoading(true);
             
@@ -687,7 +493,30 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
             // console.log(`✅ Death Toll: Fetched ${deathsTollData.length} total records in ${deathsTollBatches} batch(es), found ${deathsToll.length} unique values`);
             
-            this.filterOptions = { years, locations, deathsToll };
+            // Event Names query with pagination to fetch all records
+            // console.log('Querying event names with pagination...');
+            let allEventNamesData = [];
+            start = 0;
+            let eventNameBatches = 0;
+            while (true) {
+                let query = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '').range(start, start + batchSize - 1);
+                if (selectedFilters.year) query = query.eq('year', selectedFilters.year);
+                if (selectedFilters.location) query = query.eq('location_name', selectedFilters.location);
+                if (selectedFilters.deathsToll) query = query.eq('deaths_toll', selectedFilters.deathsToll);
+                const { data: batchData, error } = await query;
+                if (error) throw error;
+                eventNameBatches++;
+                allEventNamesData.push(...batchData);
+                // console.log(`📦 Event name batch ${eventNameBatches}: fetched ${batchData.length} records (total so far: ${allEventNamesData.length})`);
+                if (batchData.length < batchSize) break;
+                start += batchSize;
+            }
+            const eventNamesData = allEventNamesData;
+            const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
+            eventNames.splice(100); // Limit to top 100 event names
+            // console.log(`✅ Event Names: Fetched ${eventNamesData.length} total records in ${eventNameBatches} batch(es), found ${eventNames.length} unique event names (showing top 100)`);
+            
+            this.filterOptions = { years, locations, deathsToll, eventNames };
             
             this.populateFilterDropdowns(selectedFilters);
             
@@ -703,7 +532,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             console.error('Current filter state:', selectedFilters);
             
             // Restore opacity and hide loading on error
-            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter');
+            const selects = document.querySelectorAll('#year-filter, #location-filter, #deaths-toll-filter, #event-name-filter');
             selects.forEach(s => s.style.opacity = '1');
             this.showFilterLoading(false);
             
@@ -773,10 +602,20 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
         const deathsTollSelect = document.getElementById('deaths-toll-filter');
+        const eventNameSelect = document.getElementById('event-name-filter');
+        
+        const locationSearch = document.getElementById('location-search');
+        const deathsTollSearch = document.getElementById('deaths-toll-search');
+        const eventNameSearch = document.getElementById('event-name-search');
+        
+        const locationDatalist = document.getElementById('location-datalist');
+        const deathsTollDatalist = document.getElementById('deaths-toll-datalist');
+        const eventNameDatalist = document.getElementById('event-name-datalist');
         
         const currentYear = selectedFilters.year || yearSelect.value;
         const currentLocation = selectedFilters.location || locationSelect.value;
         const currentDeathsToll = selectedFilters.deathsToll || deathsTollSelect.value;
+        const currentEventName = selectedFilters.eventName || eventNameSelect.value;
         
         // Clear and repopulate year filter
         const yearOptions = yearSelect.querySelectorAll('option:not(:first-child)');
@@ -800,18 +639,33 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         // Clear and repopulate location filter
         const locationOptions = locationSelect.querySelectorAll('option:not(:first-child)');
         locationOptions.forEach(opt => opt.remove());
+        locationDatalist.innerHTML = '';
         this.filterOptions.locations.forEach(location => {
             const option = document.createElement('option');
             option.value = location;
             option.textContent = location;
             if (location === currentLocation) option.selected = true;
             locationSelect.appendChild(option);
+            
+            // Add to datalist
+            const datalistOption = document.createElement('option');
+            datalistOption.value = location;
+            locationDatalist.appendChild(datalistOption);
         });
+        // Update search input value if match exists
+        if (currentLocation) {
+            locationSearch.value = currentLocation;
+            locationSearch.classList.add('has-value');
+        } else {
+            locationSearch.value = '';
+            locationSearch.classList.remove('has-value');
+        }
         // console.log(`Added ${this.filterOptions.locations.length} location options`);
         
         // Clear and repopulate deaths toll filter
         const deathsTollOptions = deathsTollSelect.querySelectorAll('option:not(:first-child)');
         deathsTollOptions.forEach(opt => opt.remove());
+        deathsTollDatalist.innerHTML = '';
         this.filterOptions.deathsToll.forEach(deathToll => {
             const option = document.createElement('option');
             option.value = deathToll;
@@ -819,8 +673,48 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             option.textContent = deathToll === '0' ? '0 (None)' : deathToll;
             if (deathToll === currentDeathsToll) option.selected = true;
             deathsTollSelect.appendChild(option);
+            
+            // Add to datalist
+            const datalistOption = document.createElement('option');
+            datalistOption.value = deathToll === '0' ? '0 (None)' : deathToll;
+            deathsTollDatalist.appendChild(datalistOption);
         });
+        // Update search input value if match exists
+        if (currentDeathsToll) {
+            const displayValue = currentDeathsToll === '0' ? '0 (None)' : currentDeathsToll;
+            deathsTollSearch.value = displayValue;
+            deathsTollSearch.classList.add('has-value');
+        } else {
+            deathsTollSearch.value = '';
+            deathsTollSearch.classList.remove('has-value');
+        }
         // console.log(`Added ${this.filterOptions.deathsToll.length} deaths toll options`);
+        
+        // Clear and repopulate event name filter
+        const eventNameOptions = eventNameSelect.querySelectorAll('option:not(:first-child)');
+        eventNameOptions.forEach(opt => opt.remove());
+        eventNameDatalist.innerHTML = '';
+        this.filterOptions.eventNames.forEach(eventName => {
+            const option = document.createElement('option');
+            option.value = eventName;
+            option.textContent = eventName;
+            if (eventName === currentEventName) option.selected = true;
+            eventNameSelect.appendChild(option);
+            
+            // Add to datalist
+            const datalistOption = document.createElement('option');
+            datalistOption.value = eventName;
+            eventNameDatalist.appendChild(datalistOption);
+        });
+        // Update search input value if match exists
+        if (currentEventName) {
+            eventNameSearch.value = currentEventName;
+            eventNameSearch.classList.add('has-value');
+        } else {
+            eventNameSearch.value = '';
+            eventNameSearch.classList.remove('has-value');
+        }
+        // console.log(`Added ${this.filterOptions.eventNames.length} event name options`);
         
         // Re-apply the dropdown limiting after repopulating
         if (typeof limitDropdowns === 'function') {
@@ -836,12 +730,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
             if (filters.deathsToll) totalQuery = totalQuery.eq('deaths_toll', filters.deathsToll);
-            // Apply tag filters
-            if (filters.tagFilters && filters.tagFilters.length > 0) {
-                filters.tagFilters.forEach(tagFilter => {
-                    totalQuery = totalQuery.eq(tagFilter.field, tagFilter.value);
-                });
-            }
+            if (filters.eventName) totalQuery = totalQuery.eq('flood_event_name', filters.eventName);
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
             
@@ -849,12 +738,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
             if (filters.deathsToll) minQuery = minQuery.eq('deaths_toll', filters.deathsToll);
-            // Apply tag filters
-            if (filters.tagFilters && filters.tagFilters.length > 0) {
-                filters.tagFilters.forEach(tagFilter => {
-                    minQuery = minQuery.eq(tagFilter.field, tagFilter.value);
-                });
-            }
+            if (filters.eventName) minQuery = minQuery.eq('flood_event_name', filters.eventName);
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
             let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
@@ -863,12 +747,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
             if (filters.deathsToll) maxQuery = maxQuery.eq('deaths_toll', filters.deathsToll);
-            // Apply tag filters
-            if (filters.tagFilters && filters.tagFilters.length > 0) {
-                filters.tagFilters.forEach(tagFilter => {
-                    maxQuery = maxQuery.eq(tagFilter.field, tagFilter.value);
-                });
-            }
+            if (filters.eventName) maxQuery = maxQuery.eq('flood_event_name', filters.eventName);
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
@@ -877,12 +756,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
-            // Apply tag filters
-            if (filters.tagFilters && filters.tagFilters.length > 0) {
-                filters.tagFilters.forEach(tagFilter => {
-                    casualtiesQuery = casualtiesQuery.eq(tagFilter.field, tagFilter.value);
-                });
-            }
+            if (filters.eventName) casualtiesQuery = casualtiesQuery.eq('flood_event_name', filters.eventName);
             // Note: casualties filter is NOT applied here so this stat always shows events with casualties within other selected filters
             const { count: casualtiesCount, error: casualtiesError } = await casualtiesQuery;
             if (casualtiesError) throw casualtiesError;
@@ -923,13 +797,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             if (filters.year) query = query.eq('year', filters.year);
             if (filters.location) query = query.eq('location_name', filters.location);
             if (filters.deathsToll) query = query.eq('deaths_toll', filters.deathsToll);
-            
-            // Apply tag filters
-            if (filters.tagFilters && filters.tagFilters.length > 0) {
-                filters.tagFilters.forEach(tagFilter => {
-                    query = query.eq(tagFilter.field, tagFilter.value);
-                });
-            }
+            if (filters.eventName) query = query.eq('flood_event_name', filters.eventName);
             
             query = query.limit(2000);
             
@@ -1164,17 +1032,20 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             year: document.getElementById('year-filter').value,
             location: document.getElementById('location-filter').value,
             deathsToll: document.getElementById('deaths-toll-filter').value,
-            tagFilters: this.tagFilters
+            eventName: document.getElementById('event-name-filter').value
         };
 
         // Count active filters and apply has-value classes
-        let activeCount = this.tagFilters.length; // Start with tag filters count
+        let activeCount = 0;
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
+        const locationSearch = document.getElementById('location-search');
         const deathsTollSelect = document.getElementById('deaths-toll-filter');
+        const deathsTollSearch = document.getElementById('deaths-toll-search');
+        const eventNameSelect = document.getElementById('event-name-filter');
+        const eventNameSearch = document.getElementById('event-name-search');
         
         Object.keys(filters).forEach(key => {
-            if (key === 'tagFilters') return; // Skip tagFilters in this loop
             if (!filters[key]) {
                 delete filters[key];
             } else {
@@ -1190,13 +1061,24 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         }
         if (filters.location) {
             locationSelect.classList.add('has-value');
+            locationSearch.classList.add('has-value');
         } else {
             locationSelect.classList.remove('has-value');
+            locationSearch.classList.remove('has-value');
         }
         if (filters.deathsToll) {
             deathsTollSelect.classList.add('has-value');
+            deathsTollSearch.classList.add('has-value');
         } else {
             deathsTollSelect.classList.remove('has-value');
+            deathsTollSearch.classList.remove('has-value');
+        }
+        if (filters.eventName) {
+            eventNameSelect.classList.add('has-value');
+            eventNameSearch.classList.add('has-value');
+        } else {
+            eventNameSelect.classList.remove('has-value');
+            eventNameSearch.classList.remove('has-value');
         }
         
         // Update active filters display
@@ -1233,35 +1115,7 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
                 if (filters.year) filterNames.push('Year');
                 if (filters.location) filterNames.push('Location');
                 if (filters.deathsToll) filterNames.push('Deaths');
-                
-                // Add tag filter field names
-                if (filters.tagFilters && filters.tagFilters.length > 0) {
-                    const tagFieldLabels = {
-                        location_name: 'Location',
-                        cause_of_flood: 'Cause',
-                        severity: 'Severity',
-                        casualties: 'Casualties',
-                        displaced_evacuated: 'Displaced',
-                        structures_destroyed: 'Structures',
-                        infrastructure_damage: 'Infrastructure',
-                        magnitude_height: 'Magnitude',
-                        duration_days: 'Duration',
-                        economic_cost_usd: 'Cost',
-                        environmental_impact: 'Environment',
-                        response_measures: 'Response',
-                        long_term_effects: 'Effects',
-                        cultural_historical_significance: 'Cultural',
-                        sources: 'Sources',
-                        notes: 'Notes'
-                    };
-                    
-                    filters.tagFilters.forEach(tagFilter => {
-                        const label = tagFieldLabels[tagFilter.field] || tagFilter.field;
-                        if (!filterNames.includes(label)) {
-                            filterNames.push(label);
-                        }
-                    });
-                }
+                if (filters.eventName) filterNames.push('Event Name');
                 
                 const filterText = filterNames.join(', ');
                 toggleBtn.textContent = `Filters: ${filterText}`;
@@ -1356,27 +1210,30 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const yearSelect = document.getElementById('year-filter');
         const locationSelect = document.getElementById('location-filter');
         const deathsTollSelect = document.getElementById('deaths-toll-filter');
-        const tagSearchInput = document.getElementById('tag-search-input');
-        const tagSuggestionsDropdown = document.getElementById('tag-suggestions-dropdown');
+        const eventNameSelect = document.getElementById('event-name-filter');
+        
+        const locationSearch = document.getElementById('location-search');
+        const deathsTollSearch = document.getElementById('deaths-toll-search');
+        const eventNameSearch = document.getElementById('event-name-search');
         
         yearSelect.value = '';
         locationSelect.value = '';
         deathsTollSelect.value = '';
+        eventNameSelect.value = '';
+        
+        // Clear search inputs
+        locationSearch.value = '';
+        deathsTollSearch.value = '';
+        eventNameSearch.value = '';
         
         // Remove has-value classes
         yearSelect.classList.remove('has-value');
         locationSelect.classList.remove('has-value');
         deathsTollSelect.classList.remove('has-value');
-        
-        // Reset tag search
-        this.tagFilters = [];
-        if (tagSearchInput) {
-            tagSearchInput.value = '';
-            tagSearchInput.classList.remove('has-value');
-        }
-        if (tagSuggestionsDropdown) {
-            tagSuggestionsDropdown.classList.add('hidden');
-        }
+        eventNameSelect.classList.remove('has-value');
+        locationSearch.classList.remove('has-value');
+        deathsTollSearch.classList.remove('has-value');
+        eventNameSearch.classList.remove('has-value');
         
         // Hide active filters summary
         const activeFiltersSummary = document.getElementById('active-filters-summary');
@@ -1405,30 +1262,11 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             year: 'Year',
             location: 'Location',
             deathsToll: 'Death Toll',
-            // Tag search field labels
-            location_name: 'Location',
-            cause_of_flood: 'Cause',
-            severity: 'Severity',
-            casualties: 'Casualties',
-            displaced_evacuated: 'Displaced/Evacuated',
-            structures_destroyed: 'Structures Destroyed',
-            infrastructure_damage: 'Infrastructure Damage',
-            magnitude_height: 'Magnitude/Height',
-            duration_days: 'Duration (Days)',
-            economic_cost_usd: 'Economic Cost (USD)',
-            environmental_impact: 'Environmental Impact',
-            response_measures: 'Response Measures',
-            long_term_effects: 'Long-term Effects',
-            cultural_historical_significance: 'Cultural/Historical Significance',
-            sources: 'Sources',
-            notes: 'Notes'
+            eventName: 'Event Name'
         };
         
-        // Count active filters (including tag filters)
-        let activeCount = Object.keys(filters).filter(k => k !== 'tagFilters').length;
-        if (filters.tagFilters && filters.tagFilters.length > 0) {
-            activeCount += filters.tagFilters.length;
-        }
+        // Count active filters
+        let activeCount = Object.keys(filters).length;
         
         if (activeCount === 0) {
             // Hide summary if no filters active
@@ -1439,9 +1277,8 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         // Show summary and create badges
         activeFiltersSummary.classList.remove('hidden');
         
-        // Create badges for standard filters
+        // Create badges for all filters
         Object.keys(filters).forEach(filterKey => {
-            if (filterKey === 'tagFilters') return; // Skip tagFilters array, handle separately
             
             const filterValue = filters[filterKey];
             const filterLabel = filterLabels[filterKey] || filterKey;
@@ -1472,39 +1309,6 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             
             activeFiltersList.appendChild(badge);
         });
-        
-        // Create badges for tag filters
-        if (filters.tagFilters && filters.tagFilters.length > 0) {
-            filters.tagFilters.forEach(tagFilter => {
-                const filterLabel = filterLabels[tagFilter.field] || tagFilter.field;
-                
-                // Create badge element
-                const badge = document.createElement('div');
-                badge.className = 'filter-badge';
-                
-                // Create badge content
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'filter-badge-label';
-                labelSpan.textContent = `${filterLabel}:`;
-                
-                const valueSpan = document.createElement('span');
-                valueSpan.className = 'filter-badge-value';
-                valueSpan.textContent = this.escapeHtml(tagFilter.value);
-                
-                const removeBtn = document.createElement('button');
-                removeBtn.className = 'filter-badge-remove';
-                removeBtn.innerHTML = '×';
-                removeBtn.title = `Remove ${filterLabel} filter`;
-                removeBtn.setAttribute('aria-label', `Remove ${filterLabel} filter`);
-                removeBtn.addEventListener('click', () => this.removeTagFilter(tagFilter.field, tagFilter.value));
-                
-                badge.appendChild(labelSpan);
-                badge.appendChild(valueSpan);
-                badge.appendChild(removeBtn);
-                
-                activeFiltersList.appendChild(badge);
-            });
-        }
     }
     
     async clearIndividualFilter(filterName) {
@@ -1512,7 +1316,14 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
         const filterElementIds = {
             year: 'year-filter',
             location: 'location-filter',
-            deathsToll: 'deaths-toll-filter'
+            deathsToll: 'deaths-toll-filter',
+            eventName: 'event-name-filter'
+        };
+        
+        const searchInputIds = {
+            location: 'location-search',
+            deathsToll: 'deaths-toll-search',
+            eventName: 'event-name-search'
         };
         
         const elementId = filterElementIds[filterName];
@@ -1524,11 +1335,22 @@ const deathsTollFilter = document.getElementById('deaths-toll-filter');        /
             filterElement.value = '';
             filterElement.classList.remove('has-value');
             
+            // Also clear the search input if it exists
+            const searchInputId = searchInputIds[filterName];
+            if (searchInputId) {
+                const searchInput = document.getElementById(searchInputId);
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.classList.remove('has-value');
+                }
+            }
+            
             // Trigger filter change to update UI and reload data
             const selectedFilters = {
                 year: document.getElementById('year-filter').value,
                 location: document.getElementById('location-filter').value,
-                deathsToll: document.getElementById('deaths-toll-filter').value
+                deathsToll: document.getElementById('deaths-toll-filter').value,
+                eventName: document.getElementById('event-name-filter').value
             };
             
             // Remove empty values

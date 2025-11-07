@@ -163,38 +163,52 @@
                             
                             <!-- Location Filter -->
                             <div class="filter-group">
-                                <label for="location-filter">Location:</label>
-                                <select id="location-filter">
-                                    <option value="">All Locations</option>
-                                </select>
+                                <label for="location-filter">Location (type to search):</label>
+                                <div class="filter-with-search">
+                                    <input type="text" 
+                                           id="location-search" 
+                                           list="location-datalist" 
+                                           placeholder="Type to search or select..." 
+                                           autocomplete="off"
+                                           aria-label="Search locations">
+                                    <select id="location-filter" style="display: none;">
+                                        <option value="">All Locations</option>
+                                    </select>
+                                    <datalist id="location-datalist"></datalist>
+                                </div>
                             </div>
                             
                             <!-- Death Toll Filter -->
                             <div class="filter-group">
-                                <label for="deaths-toll-filter">Death Toll:</label>
-                                <select id="deaths-toll-filter">
-                                    <option value="">All Events</option>
-                                </select>
+                                <label for="deaths-toll-filter">Death Toll (type to search):</label>
+                                <div class="filter-with-search">
+                                    <input type="text" 
+                                           id="deaths-toll-search" 
+                                           list="deaths-toll-datalist" 
+                                           placeholder="Type to search or select..." 
+                                           autocomplete="off"
+                                           aria-label="Search death toll">
+                                    <select id="deaths-toll-filter" style="display: none;">
+                                        <option value="">All Events</option>
+                                    </select>
+                                    <datalist id="deaths-toll-datalist"></datalist>
+                                </div>
                             </div>
                             
-                            <!-- Tag-Based Search Filter -->
+                            <!-- Event Name Filter -->
                             <div class="filter-group">
-                                <label for="tag-field-selector">Search by Field:</label>
-                                <div class="tag-search-container">
-                                    <select id="tag-field-selector" aria-label="Select field to search">
-                                        <option value="">Select field...</option>
-                                        <option value="location_name">Location</option>
-                                        <option value="cause_of_flood">Cause</option>
-                                        <option value="flood_event_name">Event Name</option>
-                                        <option value="source">Source</option>
-                                    </select>
+                                <label for="event-name-filter">Event Name (type to search):</label>
+                                <div class="filter-with-search">
                                     <input type="text" 
-                                           id="tag-search-input" 
-                                           placeholder="Type to search..." 
-                                           aria-label="Search within selected field"
+                                           id="event-name-search" 
+                                           list="event-name-datalist" 
+                                           placeholder="Type to search or select..." 
                                            autocomplete="off"
-                                           disabled>
-                                    <div id="tag-suggestions-dropdown" class="tag-suggestions-dropdown hidden" role="listbox" aria-label="Search suggestions"></div>
+                                           aria-label="Search event names">
+                                    <select id="event-name-filter" style="display: none;">
+                                        <option value="">All Events</option>
+                                    </select>
+                                    <datalist id="event-name-datalist"></datalist>
                                 </div>
                             </div>
                             
