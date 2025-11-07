@@ -20,7 +20,6 @@ class FloodMapApp {
         this.filterOptionsCache = null; // Cache for filter options
         this.filterOptionsCacheTimestamp = null; // Timestamp for cache validity
         this.FILTER_CACHE_TTL = 5 * 60 * 1000; // Cache TTL: 5 minutes
-        this.selectSearchEnhancer = null; // Select search enhancement
         
         this.init();
     }
@@ -31,14 +30,6 @@ class FloodMapApp {
         this.initEventListeners();
         await this.checkDatabaseConnection();
         await this.loadFilterOptions();
-        
-        // Initialize select search enhancement after filter options are loaded
-        if (window.SelectSearchEnhancer) {
-            this.selectSearchEnhancer = new SelectSearchEnhancer('.filter-select');
-            this.selectSearchEnhancer.init();
-            if (window.DEBUG_MODE) console.log('✅ Select search enhancement initialized');
-        }
-        
         await this.loadStats({});
         await this.loadFloodData();
     }
