@@ -495,25 +495,12 @@ h6 { font-size: 0.75rem; }
  *   - Success banners (z-index: 10000)
  */
 
-/* Custom Dropdown Component */
-.custom-dropdown {
-    position: relative;
-    width: 100%;
-    display: flex;
-    align-items: stretch;
-    z-index: 1;
-}
-
-/* Dropdown open state */
-.custom-dropdown.dropdown-open {
-    background-color: rgba(51, 122, 183, 0.02);
-}
-
-/* Input Field Styling */
-.custom-dropdown input[type="text"] {
+/* Native Select Styling for Filters */
+.filter-select,
+select[id$="-filter"] {
     width: 100%;
     padding: 0.875rem 2.5rem 0.875rem 1rem;
-    background: var(--background-primary);
+    background-color: var(--background-primary);
     border: none;
     border-bottom: 1px solid var(--border-color);
     border-radius: 0;
@@ -521,209 +508,46 @@ h6 { font-size: 0.75rem; }
     color: var(--text-primary);
     cursor: pointer;
     transition: all var(--transition-fast);
-    outline: none;
     min-height: 2.75rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px;
 }
 
-.custom-dropdown input[type="text"]:focus {
+.filter-select:focus,
+select[id$="-filter"]:focus {
     border-bottom-color: var(--primary-color);
     box-shadow: 0 3px 0 0 var(--primary-color);
     background-color: rgba(51, 122, 183, 0.02);
-    transition: all var(--transition-fast);
+    outline: none;
 }
 
-.custom-dropdown input[type="text"]:hover {
+.filter-select:hover,
+select[id$="-filter"]:hover {
     border-bottom-color: var(--text-primary);
     background-color: rgba(0, 0, 0, 0.02);
 }
 
-.custom-dropdown input[type="text"].has-value {
+.filter-select.has-value,
+select[id$="-filter"].has-value {
     border-bottom: 2px solid var(--primary-color);
     border-left: 3px solid var(--primary-color);
     background-color: rgba(51, 122, 183, 0.05);
     padding-left: calc(1rem - 3px);
 }
 
-.custom-dropdown input[type="text"].has-value:hover {
-    background-color: rgba(51, 122, 183, 0.08);
+.filter-select:disabled,
+select[id$="-filter"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: rgba(0, 0, 0, 0.05);
 }
 
-.custom-dropdown input[type="text"].dropdown-open {
-    border-bottom-color: var(--primary-color);
-    background-color: var(--background-primary);
-}
-
-.custom-dropdown input[type="text"]::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.7;
-    font-size: 0.85rem;
-}
-
-/* Dropdown Toggle Button */
-.dropdown-toggle {
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    width: 2.5rem;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform var(--transition-fast);
-    z-index: 1;
-}
-
-.dropdown-toggle svg {
-    color: var(--text-secondary);
-    transition: transform var(--transition-fast);
-}
-
-.dropdown-toggle:hover svg {
-    color: var(--primary-color);
-}
-
-.dropdown-toggle:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: -2px;
-}
-
-.dropdown-toggle:active svg {
-    color: var(--primary-color);
-    transform: scale(0.95);
-}
-
-.dropdown-toggle.open svg {
-    transform: rotate(180deg);
-}
-
-/* Dropdown Menu - Uses standard absolute positioning with z-index: 1100 */
-.dropdown-menu {
-    position: absolute;
-    top: calc(100% + 2px);
-    left: 0;
-    right: 0;
-    width: 100%;
-    background: var(--background-primary);
-    border: 2px solid var(--primary-color);
-    border-radius: 0;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
-    max-height: min(300px, 40vh);
-    overflow: hidden;
-    z-index: 1100;
-    display: none;
-    opacity: 0;
-    transition: all var(--transition-base);
-    box-sizing: border-box;
-}
-
-.dropdown-menu.show {
-    display: block;
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-}
-
-.dropdown-menu:not(.show) {
-    pointer-events: none;
-}
-
-/* Dropdown Options Container
- * IMPORTANT: max-height must be 100% (relative to parent) not a fixed pixel value.
- * The parent .dropdown-menu has max-height: min(300px, 40vh) which varies by viewport.
- * Using 100% ensures the child never exceeds the parent's constrained height,
- * preventing visual overflow and overlap with other UI elements.
- */
-.dropdown-options {
-    position: relative;
-    max-height: 100%;
-    overflow-y: auto;
-    padding: 0.25rem 0;
-    scroll-behavior: smooth;
-}
-
-/* Dropdown Options */
-.dropdown-option {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    transition: background var(--transition-fast);
-    font-size: 0.9rem;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    user-select: none;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-}
-
-.dropdown-option:last-child {
-    border-bottom: none;
-}
-
-.dropdown-option:hover {
-    background-color: rgba(51, 122, 183, 0.1);
-    border-left: 2px solid var(--primary-color);
-    padding-left: calc(1rem - 2px);
-}
-
-.dropdown-option.selected {
-    background-color: rgba(51, 122, 183, 0.15);
-    font-weight: 500;
-    border-left: 3px solid var(--primary-color);
-    padding-left: calc(1rem - 3px);
-}
-
-.dropdown-option.highlighted {
-    background-color: rgba(51, 122, 183, 0.08);
-}
-
-.dropdown-option.no-results {
-    color: var(--text-secondary);
-    font-style: italic;
-    cursor: default;
-    text-align: center;
-}
-
-/* Empty State */
-.dropdown-empty {
-    padding: 1.5rem;
-    text-align: center;
-    color: var(--text-secondary);
+select[id$="-filter"] option {
+    padding: 0.5rem;
     font-size: 0.875rem;
-    font-style: italic;
-}
-
-/* Scrollbar Styling */
-.dropdown-options::-webkit-scrollbar {
-    width: 10px;
-}
-
-.dropdown-options::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-}
-
-.dropdown-options::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-}
-
-.dropdown-options::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-color);
-}
-
-/* Loading State */
-.dropdown-loading {
-    padding: 1.5rem;
-    text-align: center;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-}
-
-/* Focus-visible styles for keyboard navigation */
-.dropdown-option:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: -2px;
-    background-color: rgba(51, 122, 183, 0.08);
 }
 
 /* Active Filters Summary Panel */
