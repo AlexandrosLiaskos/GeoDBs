@@ -858,8 +858,9 @@ class FloodMapApp {
     }
     
     async applyFilters() {
+        const yearValue = document.getElementById('year-filter').value;
         const filters = {
-            year: document.getElementById('year-filter').value,
+            year: yearValue ? parseInt(yearValue, 10) : null,
             location: document.getElementById('location-filter').value,
             deathsToll: document.getElementById('deaths-toll-filter').value,
             eventName: document.getElementById('event-name-filter').value
