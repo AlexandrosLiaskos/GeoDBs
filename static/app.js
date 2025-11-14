@@ -144,8 +144,9 @@ class FloodMapApp {
             if (this.isUpdatingFilters) return;
             this.isUpdatingFilters = true;
 
+            const yearValue = document.getElementById('year-filter').value;
             const selectedFilters = {
-                year: document.getElementById('year-filter').value,
+                year: yearValue ? parseInt(yearValue, 10) : null,
                 location: document.getElementById('location-filter').value,
                 deathsToll: document.getElementById('deaths-toll-filter').value,
                 eventName: document.getElementById('event-name-filter').value
@@ -538,10 +539,17 @@ class FloodMapApp {
             select.appendChild(option);
         });
 
-        // Set selected value
-        if (currentValue && options.includes(currentValue)) {
-            select.value = currentValue;
-            select.classList.add('has-value');
+        // Set selected value - use loose equality to handle number/string comparison
+        if (currentValue != null && currentValue !== '') {
+            const valueToSet = String(currentValue);
+            const matchFound = options.some(opt => String(opt) === valueToSet);
+            if (matchFound) {
+                select.value = valueToSet;
+                select.classList.add('has-value');
+            } else {
+                select.value = '';
+                select.classList.remove('has-value');
+            }
         } else {
             select.value = '';
             select.classList.remove('has-value');
