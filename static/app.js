@@ -164,6 +164,12 @@ class FloodMapApp {
         // Store handler for use in custom dropdowns
         this.handleFilterChange = handleFilterChange;
         
+        // Attach change event listeners to all filter dropdowns
+        document.getElementById('year-filter').addEventListener('change', handleFilterChange);
+        document.getElementById('location-filter').addEventListener('change', handleFilterChange);
+        document.getElementById('deaths-toll-filter').addEventListener('change', handleFilterChange);
+        document.getElementById('event-name-filter').addEventListener('change', handleFilterChange);
+        
         document.getElementById('clear-filters').addEventListener('click', () => {
             this.clearFilters();
         });
