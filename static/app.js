@@ -1091,7 +1091,7 @@ class FloodMapApp {
     queryBuilderFields = [
         { value: 'year', label: 'Year', type: 'number' },
         { value: 'location_name', label: 'Location', type: 'text' },
-        { value: 'deaths_toll', label: 'Death Toll', type: 'text' }, // Database stores as text
+        { value: 'deaths_toll_int', label: 'Death Toll', type: 'number' }, // Integer column for numeric queries
         { value: 'cause_of_flood', label: 'Cause of Flood', type: 'text' },
         { value: 'flood_event_name', label: 'Event Name', type: 'text' }
     ];
@@ -1240,7 +1240,7 @@ class FloodMapApp {
         const fieldMap = {
             'year': 'years',
             'location_name': 'locations',
-            'deaths_toll': 'deathsToll',
+            'deaths_toll_int': 'deathsTollInt',
             'flood_event_name': 'eventNames',
             'cause_of_flood': 'causeOfFlood'
         };
@@ -1248,6 +1248,17 @@ class FloodMapApp {
         const optionKey = fieldMap[fieldName];
         if (optionKey && this.filterOptions[optionKey]) {
             return this.filterOptions[optionKey];
+        }
+
+        // For deaths_toll_int, get unique integer values
+        if (fieldName === 'deaths_toll_int' && this.allData) {
+            const values = new Set();
+            this.allData.forEach(item => {
+                if (item.deaths_toll_int !== null && item.deaths_toll_int !== undefined) {
+                    values.add(item.deaths_toll_int);
+                }
+            });
+            return Array.from(values).sort((a, b) => a - b);
         }
 
         // For cause_of_flood, extract from all data if available
@@ -1458,7 +1469,7 @@ class FloodMapApp {
             // Build the Supabase query for map data
             let query = window.supabaseClient
                 .from('floods')
-                .select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood')
+                .select('id, latitude, longitude, year, location_name, deaths_toll, deaths_toll_int, cause_of_flood')
                 .not('latitude', 'is', null)
                 .not('longitude', 'is', null);
 
@@ -1514,12 +1525,10 @@ class FloodMapApp {
         const minYear = years.length > 0 ? Math.min(...years) : 'N/A';
         const maxYear = years.length > 0 ? Math.max(...years) : 'N/A';
 
-        // Count events with casualties
+        // Count events with casualties (use deaths_toll_int for accuracy)
         const casualtiesCount = data.filter(d => {
-            const toll = d.deaths_toll;
-            if (toll === null || toll === undefined) return false;
-            const tollStr = String(toll).trim();
-            return tollStr !== '' && tollStr !== '0';
+            const toll = d.deaths_toll_int;
+            return toll !== null && toll !== undefined && toll > 0;
         }).length;
 
         // Update stats display (use optional chaining for safety)
