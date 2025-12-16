@@ -1233,6 +1233,37 @@ class FloodMapApp {
         });
     }
 
+    getFieldValues(fieldName) {
+        // Get available values for a field from filterOptions
+        if (!this.filterOptions) return [];
+
+        const fieldMap = {
+            'year': 'years',
+            'location_name': 'locations',
+            'deaths_toll': 'deathsToll',
+            'flood_event_name': 'eventNames',
+            'cause_of_flood': 'causeOfFlood'
+        };
+
+        const optionKey = fieldMap[fieldName];
+        if (optionKey && this.filterOptions[optionKey]) {
+            return this.filterOptions[optionKey];
+        }
+
+        // For cause_of_flood, extract from all data if available
+        if (fieldName === 'cause_of_flood' && this.allData) {
+            const causes = new Set();
+            this.allData.forEach(item => {
+                if (item.cause_of_flood) {
+                    causes.add(item.cause_of_flood.trim());
+                }
+            });
+            return Array.from(causes).sort();
+        }
+
+        return [];
+    }
+
     renderConditionRow(condition, index, isInGroup = false) {
         const row = document.createElement('div');
         row.className = 'query-condition-row' + (isInGroup ? ' grouped' : '');
@@ -1241,6 +1272,12 @@ class FloodMapApp {
         const fieldDef = this.queryBuilderFields.find(f => f.value === condition.field);
         const operators = this.queryBuilderOperators[fieldDef?.type || 'text'];
         const needsValue = !['is_null', 'is_not_null'].includes(condition.operator);
+        const fieldValues = this.getFieldValues(condition.field);
+
+        // Build value dropdown options
+        const valueOptions = fieldValues.map(v =>
+            `<option value="${this.escapeHtml(String(v))}" ${String(condition.value) === String(v) ? 'selected' : ''}>${this.escapeHtml(String(v))}</option>`
+        ).join('');
 
         row.innerHTML = `
             ${index > 0 ? `
@@ -1266,11 +1303,10 @@ class FloodMapApp {
             </div>
             ${needsValue ? `
             <div class="condition-value">
-                <input type="${fieldDef?.type === 'number' ? 'number' : 'text'}"
-                       data-id="${condition.id}"
-                       data-prop="value"
-                       value="${this.escapeHtml(condition.value || '')}"
-                       placeholder="Enter value...">
+                <select data-id="${condition.id}" data-prop="value">
+                    <option value="">-- Select Value --</option>
+                    ${valueOptions}
+                </select>
             </div>` : '<div class="condition-value"></div>'}
             <button class="condition-remove" data-remove="${condition.id}" title="Remove">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1281,18 +1317,12 @@ class FloodMapApp {
         `;
 
         // Add event listeners
-        row.querySelectorAll('select, input').forEach(el => {
+        row.querySelectorAll('select').forEach(el => {
             el.addEventListener('change', (e) => {
                 const id = parseInt(e.target.dataset.id);
                 const prop = e.target.dataset.prop;
                 this.updateQueryCondition(id, prop, e.target.value);
             });
-            if (el.tagName === 'INPUT') {
-                el.addEventListener('input', (e) => {
-                    const id = parseInt(e.target.dataset.id);
-                    this.updateQueryCondition(id, 'value', e.target.value);
-                });
-            }
         });
 
         row.querySelector('.condition-remove')?.addEventListener('click', (e) => {
