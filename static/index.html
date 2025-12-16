@@ -301,35 +301,51 @@
         <div id="sql-filter-modal" class="modal sql-filter-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>SQL Query Filter</h3>
+                    <h3>Query Builder</h3>
                     <button class="modal-close" id="close-sql-filter">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="sql-filter-help">
-                        <p><strong>Available Fields:</strong></p>
-                        <div class="sql-fields-list">
-                            <code>year</code> <code>location_name</code> <code>deaths_toll</code> <code>cause_of_flood</code> <code>flood_event_name</code>
+                    <!-- Query Conditions Container -->
+                    <div id="query-conditions" class="query-conditions">
+                        <!-- Conditions will be added here dynamically -->
+                    </div>
+
+                    <!-- Add Condition Button -->
+                    <div class="query-builder-controls">
+                        <button id="add-condition" class="btn-add-condition">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Condition
+                        </button>
+                        <button id="add-group" class="btn-add-group">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                            Add Group
+                        </button>
+                    </div>
+
+                    <!-- Generated Query Preview -->
+                    <div class="query-preview">
+                        <label>Generated Query:</label>
+                        <div id="query-preview-text" class="query-preview-text">
+                            <em>No conditions added</em>
                         </div>
-                        <p><strong>Example Queries:</strong></p>
-                        <ul class="sql-examples">
-                            <li><code>year > 2000</code></li>
-                            <li><code>deaths_toll >= 5</code></li>
-                            <li><code>location_name LIKE '%ATTICA%'</code></li>
-                            <li><code>year >= 1990 AND year <= 2010</code></li>
-                            <li><code>cause_of_flood LIKE '%rain%'</code></li>
-                        </ul>
                     </div>
-                    <div class="sql-input-container">
-                        <label for="sql-query-input">WHERE clause:</label>
-                        <textarea id="sql-query-input" class="sql-query-textarea" placeholder="e.g., year > 2000 AND deaths_toll >= 1" rows="3"></textarea>
-                    </div>
+
                     <div id="sql-filter-error" class="sql-filter-error hidden"></div>
+
                     <div class="sql-filter-actions">
                         <button id="apply-sql-filter" class="btn-primary">Apply Filter</button>
-                        <button id="clear-sql-filter" class="btn-secondary">Clear</button>
+                        <button id="clear-sql-filter" class="btn-secondary">Clear All</button>
                     </div>
+
                     <div id="sql-filter-active" class="sql-filter-active hidden">
-                        <span class="sql-active-label">Active SQL Filter:</span>
+                        <span class="sql-active-label">Active Filter:</span>
                         <code id="sql-active-query"></code>
                     </div>
                 </div>

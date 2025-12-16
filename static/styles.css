@@ -1526,79 +1526,191 @@ select[id$="-filter"] option {
 
 /* SQL Filter Modal Styles */
 .sql-filter-modal .modal-content {
-    max-width: 600px;
+    max-width: 700px;
 }
 
-.sql-filter-help {
+/* Query Builder Styles */
+.query-conditions {
+    min-height: 60px;
+    margin-bottom: 1rem;
+}
+
+.query-condition-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
     background: var(--background-secondary);
     border-radius: 6px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-.sql-filter-help p {
-    margin: 0 0 0.5rem 0;
-    color: var(--text-secondary);
-}
-
-.sql-fields-list {
-    display: flex;
+    margin-bottom: 0.5rem;
     flex-wrap: wrap;
+}
+
+.query-condition-row.grouped {
+    margin-left: 1.5rem;
+    border-left: 3px solid var(--accent-color);
+}
+
+.query-group {
+    background: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.query-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.query-group-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.query-group-conditions {
+    padding-left: 0.5rem;
+}
+
+.condition-logic {
+    min-width: 60px;
+}
+
+.condition-logic select {
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--accent-color);
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.condition-field select,
+.condition-operator select,
+.condition-value select,
+.condition-value input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--background-primary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.condition-field select {
+    min-width: 130px;
+}
+
+.condition-operator select {
+    min-width: 100px;
+}
+
+.condition-value input,
+.condition-value select {
+    min-width: 140px;
+    flex: 1;
+}
+
+.condition-remove {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.condition-remove:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.query-builder-controls {
+    display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
 }
 
-.sql-fields-list code,
-.sql-examples code {
-    background: var(--background-primary);
-    border: 1px solid var(--border-color);
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 0.8rem;
-    color: var(--accent-color);
-}
-
-.sql-examples {
-    margin: 0;
-    padding-left: 1.25rem;
-    list-style-type: disc;
-}
-
-.sql-examples li {
-    margin-bottom: 0.25rem;
+.btn-add-condition,
+.btn-add-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    background: transparent;
     color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.sql-input-container {
+.btn-add-condition:hover,
+.btn-add-group:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.query-preview {
     margin-bottom: 1rem;
 }
 
-.sql-input-container label {
+.query-preview label {
     display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-primary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.sql-query-textarea {
-    width: 100%;
-    padding: 0.75rem;
+.query-preview-text {
+    background: var(--background-secondary);
     border: 1px solid var(--border-color);
     border-radius: 6px;
+    padding: 0.75rem;
     font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 0.9rem;
-    background: var(--background-primary);
+    font-size: 0.85rem;
     color: var(--text-primary);
-    resize: vertical;
-    transition: border-color 0.2s ease;
+    min-height: 2.5rem;
+    word-break: break-word;
 }
 
-.sql-query-textarea:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+.query-preview-text em {
+    color: var(--text-secondary);
+}
+
+.query-preview-text .query-field {
+    color: #3b82f6;
+}
+
+.query-preview-text .query-operator {
+    color: #f59e0b;
+}
+
+.query-preview-text .query-value {
+    color: #22c55e;
+}
+
+.query-preview-text .query-logic {
+    color: #a855f7;
+    font-weight: 600;
 }
 
 .sql-filter-error {
@@ -1642,6 +1754,34 @@ select[id$="-filter"] option {
     font-size: 0.85rem;
     color: #22c55e;
     word-break: break-all;
+}
+
+/* Responsive adjustments for query builder */
+@media (max-width: 600px) {
+    .query-condition-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .condition-logic,
+    .condition-field,
+    .condition-operator,
+    .condition-value {
+        width: 100%;
+    }
+
+    .condition-logic select,
+    .condition-field select,
+    .condition-operator select,
+    .condition-value input,
+    .condition-value select {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .condition-remove {
+        align-self: flex-end;
+    }
 }
 
 .reference-item {
