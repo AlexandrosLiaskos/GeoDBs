@@ -1249,7 +1249,7 @@ class FloodMapApp {
                     <option value="AND" ${condition.logic === 'AND' ? 'selected' : ''}>AND</option>
                     <option value="OR" ${condition.logic === 'OR' ? 'selected' : ''}>OR</option>
                 </select>
-            </div>` : '<div class="condition-logic" style="min-width:60px;"></div>'}
+            </div>` : '<div class="condition-logic"><span class="condition-where">WHERE</span></div>'}
             <div class="condition-field">
                 <select data-id="${condition.id}" data-prop="field">
                     ${this.queryBuilderFields.map(f =>
@@ -1271,9 +1271,9 @@ class FloodMapApp {
                        data-prop="value"
                        value="${this.escapeHtml(condition.value || '')}"
                        placeholder="Enter value...">
-            </div>` : ''}
-            <button class="condition-remove" data-remove="${condition.id}" title="Remove condition">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            </div>` : '<div class="condition-value"></div>'}
+            <button class="condition-remove" data-remove="${condition.id}" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
@@ -1317,11 +1317,11 @@ class FloodMapApp {
                         <option value="OR" ${group.logic === 'OR' ? 'selected' : ''}>OR</option>
                     </select>
                 </div>` : ''}
-                <span class="query-group-label">Group</span>
-                <div style="display:flex;gap:0.5rem;">
-                    <button class="btn-add-condition" data-add-to-group="${group.id}" style="padding:0.25rem 0.5rem;font-size:0.7rem;">+ Add</button>
+                <span class="query-group-label">( Group )</span>
+                <div class="query-group-actions">
+                    <button class="btn-add-condition" data-add-to-group="${group.id}">+ Add</button>
                     <button class="condition-remove" data-remove="${group.id}" title="Remove group">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
                         </svg>
