@@ -1091,7 +1091,7 @@ class FloodMapApp {
     queryBuilderFields = [
         { value: 'year', label: 'Year', type: 'number' },
         { value: 'location_name', label: 'Location', type: 'text' },
-        { value: 'deaths_toll', label: 'Death Toll', type: 'number' },
+        { value: 'deaths_toll', label: 'Death Toll', type: 'text' }, // Database stores as text
         { value: 'cause_of_flood', label: 'Cause of Flood', type: 'text' },
         { value: 'flood_event_name', label: 'Event Name', type: 'text' }
     ];
