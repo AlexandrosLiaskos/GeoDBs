@@ -412,8 +412,16 @@ class FloodMapApp {
             if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll_int', selectedFilters.deathsToll);
             const eventNamesData = await this._fetchAllRecords(eventNamesQuery);
             const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
-            
-            this.filterOptions = { years, locations, deathsToll, eventNames };
+
+            // Cause of Flood query - DISTINCT
+            let causeQuery = window.supabaseClient.from('floods').select('cause_of_flood').not('cause_of_flood', 'is', null).not('cause_of_flood', 'eq', '');
+            if (selectedFilters.year) causeQuery = causeQuery.eq('year', selectedFilters.year);
+            if (selectedFilters.location) causeQuery = causeQuery.eq('location_name', selectedFilters.location);
+            if (selectedFilters.deathsToll) causeQuery = causeQuery.eq('deaths_toll_int', selectedFilters.deathsToll);
+            const causeData = await this._fetchAllRecords(causeQuery);
+            const causeOfFlood = this._getUniqueValuesWithCount(causeData, 'cause_of_flood');
+
+            this.filterOptions = { years, locations, deathsToll, eventNames, causeOfFlood };
             
             // Cache the results if no filters are applied
             if (Object.keys(selectedFilters).length === 0) {
@@ -1238,7 +1246,7 @@ class FloodMapApp {
         const fieldMap = {
             'year': 'years',
             'location_name': 'locations',
-            'deaths_toll_int': 'deathsTollInt',
+            'deaths_toll_int': 'deathsToll',  // Maps to deathsToll in filterOptions
             'flood_event_name': 'eventNames',
             'cause_of_flood': 'causeOfFlood'
         };
@@ -1246,28 +1254,6 @@ class FloodMapApp {
         const optionKey = fieldMap[fieldName];
         if (optionKey && this.filterOptions[optionKey]) {
             return this.filterOptions[optionKey];
-        }
-
-        // For deaths_toll_int, get unique integer values
-        if (fieldName === 'deaths_toll_int' && this.allData) {
-            const values = new Set();
-            this.allData.forEach(item => {
-                if (item.deaths_toll_int !== null && item.deaths_toll_int !== undefined) {
-                    values.add(item.deaths_toll_int);
-                }
-            });
-            return Array.from(values).sort((a, b) => a - b);
-        }
-
-        // For cause_of_flood, extract from all data if available
-        if (fieldName === 'cause_of_flood' && this.allData) {
-            const causes = new Set();
-            this.allData.forEach(item => {
-                if (item.cause_of_flood) {
-                    causes.add(item.cause_of_flood.trim());
-                }
-            });
-            return Array.from(causes).sort();
         }
 
         return [];
