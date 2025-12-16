@@ -12,7 +12,23 @@ if (true) {
     const config = {
         defaultSize: 6,
         debounceDelay: 150,
-        excludeSelectors: ['#year-filter', '#location-filter', '#deaths-toll-filter', '#event-name-filter'], // Selectors to exclude from limiting
+        excludeSelectors: [
+            '#year-filter',
+            '#location-filter',
+            '#deaths-toll-filter',
+            '#event-name-filter',
+            // Query Builder selects - should remain as normal dropdowns
+            '.query-condition-row select',
+            '.query-group select',
+            '.condition-logic select',
+            '.condition-field select',
+            '.condition-operator select',
+            '.condition-value select',
+            '[data-prop="field"]',
+            '[data-prop="operator"]',
+            '[data-prop="value"]',
+            '[data-prop="logic"]'
+        ], // Selectors to exclude from limiting
     };
     
     // Cache for processed selects to avoid redundant operations
