@@ -190,9 +190,18 @@
                                 <h4>Active Filters:</h4>
                                 <div id="active-filters-list" class="active-filters-list"></div>
                             </div>
-                            
+
+                            <!-- SQL Filter Button -->
+                            <button id="sql-filter-btn" class="btn-primary" style="width: 100%; margin-top: 1rem;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                                    <polyline points="4 17 10 11 4 5"></polyline>
+                                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                                </svg>
+                                SQL Query Filter
+                            </button>
+
                             <!-- Clear Filters Button -->
-                            <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 1rem;">Clear All Filters</button>
+                            <button id="clear-filters" class="btn-secondary" style="width: 100%; margin-top: 0.5rem;">Clear All Filters</button>
                         </div>
                         
                         <!-- Filter Error Message -->
@@ -283,6 +292,45 @@
                     <div class="reference-item">
                         <p class="citation-label">How to cite:</p>
                         <p>Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a> Interactive map available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SQL Filter Modal -->
+        <div id="sql-filter-modal" class="modal sql-filter-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>SQL Query Filter</h3>
+                    <button class="modal-close" id="close-sql-filter">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="sql-filter-help">
+                        <p><strong>Available Fields:</strong></p>
+                        <div class="sql-fields-list">
+                            <code>year</code> <code>location_name</code> <code>deaths_toll</code> <code>cause_of_flood</code> <code>flood_event_name</code>
+                        </div>
+                        <p><strong>Example Queries:</strong></p>
+                        <ul class="sql-examples">
+                            <li><code>year > 2000</code></li>
+                            <li><code>deaths_toll >= 5</code></li>
+                            <li><code>location_name LIKE '%ATTICA%'</code></li>
+                            <li><code>year >= 1990 AND year <= 2010</code></li>
+                            <li><code>cause_of_flood LIKE '%rain%'</code></li>
+                        </ul>
+                    </div>
+                    <div class="sql-input-container">
+                        <label for="sql-query-input">WHERE clause:</label>
+                        <textarea id="sql-query-input" class="sql-query-textarea" placeholder="e.g., year > 2000 AND deaths_toll >= 1" rows="3"></textarea>
+                    </div>
+                    <div id="sql-filter-error" class="sql-filter-error hidden"></div>
+                    <div class="sql-filter-actions">
+                        <button id="apply-sql-filter" class="btn-primary">Apply Filter</button>
+                        <button id="clear-sql-filter" class="btn-secondary">Clear</button>
+                    </div>
+                    <div id="sql-filter-active" class="sql-filter-active hidden">
+                        <span class="sql-active-label">Active SQL Filter:</span>
+                        <code id="sql-active-query"></code>
                     </div>
                 </div>
             </div>

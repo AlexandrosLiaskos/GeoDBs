@@ -287,6 +287,49 @@ class FloodMapApp {
                 }
             });
         }
+
+        // SQL Filter modal controls
+        const sqlFilterBtn = document.getElementById('sql-filter-btn');
+        const sqlFilterModal = document.getElementById('sql-filter-modal');
+        const closeSqlFilter = document.getElementById('close-sql-filter');
+        const applySqlFilter = document.getElementById('apply-sql-filter');
+        const clearSqlFilter = document.getElementById('clear-sql-filter');
+
+        if (sqlFilterBtn && sqlFilterModal) {
+            sqlFilterBtn.addEventListener('click', () => {
+                sqlFilterModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+
+            const closeSqlModal = () => {
+                sqlFilterModal.classList.remove('active');
+                document.body.classList.remove('modal-open');
+            };
+
+            if (closeSqlFilter) {
+                closeSqlFilter.addEventListener('click', closeSqlModal);
+            }
+
+            sqlFilterModal.addEventListener('click', (event) => {
+                if (event.target === sqlFilterModal) {
+                    closeSqlModal();
+                }
+            });
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && sqlFilterModal.classList.contains('active')) {
+                    closeSqlModal();
+                }
+            });
+
+            if (applySqlFilter) {
+                applySqlFilter.addEventListener('click', () => this.applySqlFilter());
+            }
+
+            if (clearSqlFilter) {
+                clearSqlFilter.addEventListener('click', () => this.clearSqlFilter());
+            }
+        }
     }
 
     async loadFilterOptions(selectedFilters = {}) {
@@ -1034,9 +1077,239 @@ class FloodMapApp {
         await this.loadFilterOptions({});
 
         this.updateFilterIndicator(0, {});
+
+        // Also clear SQL filter
+        this.clearSqlFilter(false);
+
         this.applyFilters();
     }
-    
+
+    // SQL Filter methods
+    async applySqlFilter() {
+        const queryInput = document.getElementById('sql-query-input');
+        const errorDiv = document.getElementById('sql-filter-error');
+        const activeDiv = document.getElementById('sql-filter-active');
+        const activeQuery = document.getElementById('sql-active-query');
+
+        if (!queryInput) return;
+
+        const query = queryInput.value.trim();
+
+        // Clear previous error
+        errorDiv?.classList.add('hidden');
+
+        if (!query) {
+            this.showSqlError('Please enter a query');
+            return;
+        }
+
+        try {
+            this.showLoading(true);
+
+            // Build the Supabase query with SQL filter
+            let supabaseQuery = window.supabaseClient
+                .from('floods')
+                .select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood')
+                .not('latitude', 'is', null)
+                .not('longitude', 'is', null);
+
+            // Parse and apply the SQL WHERE clause
+            supabaseQuery = this.parseAndApplySqlFilter(supabaseQuery, query);
+
+            // Fetch all records with pagination
+            const data = await this._fetchAllRecordsFromQuery(supabaseQuery);
+
+            if (window.DEBUG_MODE) console.log(`SQL filter returned ${data.length} records`);
+
+            // Store the active SQL filter
+            this.activeSqlFilter = query;
+
+            // Update UI
+            this.currentData = data;
+            this.updateMap();
+            this.updateVisiblePointsCount();
+
+            // Show active filter indicator
+            if (activeDiv && activeQuery) {
+                activeQuery.textContent = query;
+                activeDiv.classList.remove('hidden');
+            }
+
+            // Close modal
+            document.getElementById('sql-filter-modal')?.classList.remove('active');
+            document.body.classList.remove('modal-open');
+
+        } catch (error) {
+            console.error('SQL filter error:', error);
+            this.showSqlError(error.message || 'Invalid query syntax');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    parseAndApplySqlFilter(query, sqlWhere) {
+        // Allowed fields for filtering
+        const allowedFields = ['year', 'location_name', 'deaths_toll', 'cause_of_flood', 'flood_event_name'];
+
+        // Parse the SQL WHERE clause
+        // Support: =, !=, <, >, <=, >=, LIKE, ILIKE, AND, OR
+
+        // Split by AND/OR while preserving them
+        const parts = sqlWhere.split(/\s+(AND|OR)\s+/i);
+
+        let currentQuery = query;
+        let lastOperator = 'AND';
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i].trim();
+
+            if (part.toUpperCase() === 'AND' || part.toUpperCase() === 'OR') {
+                lastOperator = part.toUpperCase();
+                continue;
+            }
+
+            if (!part) continue;
+
+            // Parse individual condition
+            const condition = this.parseSqlCondition(part, allowedFields);
+
+            if (condition) {
+                if (lastOperator === 'OR') {
+                    // Supabase doesn't directly support OR in the same way
+                    // We'll use .or() for this
+                    currentQuery = currentQuery.or(`${condition.field}.${condition.operator}.${condition.value}`);
+                } else {
+                    // Apply the condition
+                    currentQuery = this.applyCondition(currentQuery, condition);
+                }
+            }
+        }
+
+        return currentQuery;
+    }
+
+    parseSqlCondition(condition, allowedFields) {
+        // Patterns for different operators
+        const patterns = [
+            { regex: /^(\w+)\s+ILIKE\s+'([^']+)'$/i, op: 'ilike' },
+            { regex: /^(\w+)\s+LIKE\s+'([^']+)'$/i, op: 'ilike' }, // Use ilike for case-insensitive
+            { regex: /^(\w+)\s+NOT\s+LIKE\s+'([^']+)'$/i, op: 'not.ilike' },
+            { regex: /^(\w+)\s*>=\s*(.+)$/, op: 'gte' },
+            { regex: /^(\w+)\s*<=\s*(.+)$/, op: 'lte' },
+            { regex: /^(\w+)\s*!=\s*(.+)$/, op: 'neq' },
+            { regex: /^(\w+)\s*<>\s*(.+)$/, op: 'neq' },
+            { regex: /^(\w+)\s*>\s*(.+)$/, op: 'gt' },
+            { regex: /^(\w+)\s*<\s*(.+)$/, op: 'lt' },
+            { regex: /^(\w+)\s*=\s*(.+)$/, op: 'eq' },
+            { regex: /^(\w+)\s+IS\s+NULL$/i, op: 'is', value: 'null' },
+            { regex: /^(\w+)\s+IS\s+NOT\s+NULL$/i, op: 'not.is', value: 'null' },
+        ];
+
+        for (const pattern of patterns) {
+            const match = condition.match(pattern.regex);
+            if (match) {
+                const field = match[1].toLowerCase();
+
+                // Validate field name
+                if (!allowedFields.includes(field)) {
+                    throw new Error(`Invalid field: ${field}. Allowed: ${allowedFields.join(', ')}`);
+                }
+
+                let value = pattern.value !== undefined ? pattern.value : match[2].trim();
+
+                // Remove quotes from string values
+                if (value.startsWith("'") && value.endsWith("'")) {
+                    value = value.slice(1, -1);
+                }
+
+                // Convert numeric values for numeric fields
+                if (['year', 'deaths_toll'].includes(field) && !isNaN(value)) {
+                    value = Number(value);
+                }
+
+                return { field, operator: pattern.op, value };
+            }
+        }
+
+        throw new Error(`Invalid condition: ${condition}`);
+    }
+
+    applyCondition(query, condition) {
+        const { field, operator, value } = condition;
+
+        switch (operator) {
+            case 'eq':
+                return query.eq(field, value);
+            case 'neq':
+                return query.neq(field, value);
+            case 'gt':
+                return query.gt(field, value);
+            case 'gte':
+                return query.gte(field, value);
+            case 'lt':
+                return query.lt(field, value);
+            case 'lte':
+                return query.lte(field, value);
+            case 'ilike':
+                return query.ilike(field, value);
+            case 'not.ilike':
+                return query.not(field, 'ilike', value);
+            case 'is':
+                return query.is(field, null);
+            case 'not.is':
+                return query.not(field, 'is', null);
+            default:
+                return query;
+        }
+    }
+
+    async _fetchAllRecordsFromQuery(baseQuery) {
+        const pageSize = 1000;
+        let allRecords = [];
+        let offset = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await baseQuery.range(offset, offset + pageSize - 1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                allRecords = allRecords.concat(data);
+                offset += data.length;
+                hasMore = data.length === pageSize;
+            } else {
+                hasMore = false;
+            }
+        }
+
+        return allRecords;
+    }
+
+    clearSqlFilter(reloadData = true) {
+        const queryInput = document.getElementById('sql-query-input');
+        const errorDiv = document.getElementById('sql-filter-error');
+        const activeDiv = document.getElementById('sql-filter-active');
+
+        if (queryInput) queryInput.value = '';
+        errorDiv?.classList.add('hidden');
+        activeDiv?.classList.add('hidden');
+
+        this.activeSqlFilter = null;
+
+        if (reloadData) {
+            this.applyFilters();
+        }
+    }
+
+    showSqlError(message) {
+        const errorDiv = document.getElementById('sql-filter-error');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    }
+
     updateActiveFiltersDisplay(filters) {
         const activeFiltersSummary = document.getElementById('active-filters-summary');
         const activeFiltersList = document.getElementById('active-filters-list');
