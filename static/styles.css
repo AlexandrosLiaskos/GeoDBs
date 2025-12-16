@@ -1640,54 +1640,65 @@ select[id$="-filter"] option {
     min-width: 150px;
 }
 
+/* Query Builder Dropdowns - Force proper dropdown appearance */
+.query-condition-row select,
+.query-group select,
 .condition-logic select,
 .condition-field select,
 .condition-operator select,
 .condition-value select {
-    width: 100%;
-    height: 36px;
-    padding: 0 1.75rem 0 0.625rem;
-    border: 1px solid #333;
-    border-radius: 0;
-    background-color: var(--background-primary);
-    color: var(--text-primary);
-    font-size: 0.8rem;
-    font-family: inherit;
-    cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.5rem center;
+    display: block !important;
+    width: 100% !important;
+    height: 36px !important;
+    padding: 0 2rem 0 0.625rem !important;
+    border: 1px solid #333 !important;
+    border-radius: 0 !important;
+    background-color: var(--background-primary) !important;
+    color: var(--text-primary) !important;
+    font-size: 0.8rem !important;
+    font-family: inherit !important;
+    cursor: pointer !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 0.625rem center !important;
+    background-size: 12px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
 }
 
+.query-condition-row select:hover,
+.query-group select:hover,
 .condition-logic select:hover,
 .condition-field select:hover,
 .condition-operator select:hover,
 .condition-value select:hover {
-    border-color: #000;
+    border-color: #000 !important;
 }
 
+.query-condition-row select:focus,
+.query-group select:focus,
 .condition-logic select:focus,
 .condition-field select:focus,
 .condition-operator select:focus,
 .condition-value select:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2) !important;
 }
 
 .condition-logic select {
-    font-weight: 700;
-    color: var(--primary-color);
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    text-align: center;
-    text-align-last: center;
-    padding-left: 0.5rem;
+    font-weight: 700 !important;
+    color: var(--primary-color) !important;
+    text-transform: uppercase !important;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.05em !important;
+    text-align: center !important;
+    text-align-last: center !important;
+    padding-left: 0.5rem !important;
 }
 
 .condition-where {
