@@ -1455,7 +1455,7 @@ class FloodMapApp {
         try {
             this.showLoading(true);
 
-            // Build the Supabase query
+            // Build the Supabase query for map data
             let query = window.supabaseClient
                 .from('floods')
                 .select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood')
@@ -1470,15 +1470,24 @@ class FloodMapApp {
 
             if (window.DEBUG_MODE) console.log(`Query builder returned ${data.length} records`);
 
-            // Store active filter
-            this.activeSqlFilter = this.queryConditions;
+            // Store active filter and deep copy conditions
+            this.activeSqlFilter = JSON.parse(JSON.stringify(this.queryConditions));
 
-            // Update UI
+            // Update map data
             this.currentData = data;
             this.updateMap();
             this.updateVisiblePointsCount();
 
-            // Show active filter indicator
+            // Update stats based on SQL filter results
+            await this.updateStatsFromSqlFilter(data);
+
+            // Update active filters display (will include SQL filter)
+            this.updateActiveFiltersDisplay({});
+
+            // Update mobile filter indicator
+            this.updateFilterIndicator(1, { sqlFilter: 'Query' });
+
+            // Show active filter indicator in modal
             if (activeDiv && activeQuery) {
                 activeQuery.innerHTML = this.buildQueryString(this.queryConditions);
                 activeDiv.classList.remove('hidden');
@@ -1494,6 +1503,36 @@ class FloodMapApp {
         } finally {
             this.showLoading(false);
         }
+    }
+
+    async updateStatsFromSqlFilter(data) {
+        // Calculate stats from the filtered data
+        const totalCount = data.length;
+
+        // Get year range
+        const years = data.map(d => d.year).filter(y => y != null);
+        const minYear = years.length > 0 ? Math.min(...years) : 'N/A';
+        const maxYear = years.length > 0 ? Math.max(...years) : 'N/A';
+
+        // Count events with casualties
+        const casualtiesCount = data.filter(d => {
+            const toll = d.deaths_toll;
+            if (toll === null || toll === undefined) return false;
+            const tollStr = String(toll).trim();
+            return tollStr !== '' && tollStr !== '0';
+        }).length;
+
+        // Update stats display
+        document.getElementById('total-events').textContent = totalCount.toLocaleString();
+
+        let yearRangeText;
+        if (minYear === 'N/A' && maxYear === 'N/A') {
+            yearRangeText = 'No data';
+        } else {
+            yearRangeText = `${minYear} - ${maxYear}`;
+        }
+        document.getElementById('year-range').textContent = yearRangeText;
+        document.getElementById('events-with-deaths').textContent = casualtiesCount.toLocaleString();
     }
 
     getValidConditions(conditions) {
@@ -1632,12 +1671,12 @@ class FloodMapApp {
     updateActiveFiltersDisplay(filters) {
         const activeFiltersSummary = document.getElementById('active-filters-summary');
         const activeFiltersList = document.getElementById('active-filters-list');
-        
+
         if (!activeFiltersSummary || !activeFiltersList) return;
-        
+
         // Clear existing badges
         activeFiltersList.innerHTML = '';
-        
+
         // Create filter name mapping for display
         const filterLabels = {
             year: 'Year',
@@ -1645,49 +1684,81 @@ class FloodMapApp {
             deathsToll: 'Death Toll',
             eventName: 'Event Name'
         };
-        
+
         // Count active filters
         let activeCount = Object.keys(filters).length;
-        
+
+        // Check if SQL filter is active
+        const hasSqlFilter = this.activeSqlFilter && this.getValidConditions(this.activeSqlFilter).length > 0;
+        if (hasSqlFilter) {
+            activeCount++;
+        }
+
         if (activeCount === 0) {
             // Hide summary if no filters active
             activeFiltersSummary.classList.add('hidden');
             return;
         }
-        
+
         // Show summary and create badges
         activeFiltersSummary.classList.remove('hidden');
-        
-        // Create badges for all filters
+
+        // Add SQL filter badge first if active
+        if (hasSqlFilter) {
+            const sqlBadge = document.createElement('div');
+            sqlBadge.className = 'filter-badge filter-badge-sql';
+
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'filter-badge-label';
+            labelSpan.textContent = 'Query:';
+
+            const valueSpan = document.createElement('span');
+            valueSpan.className = 'filter-badge-value';
+            valueSpan.textContent = `${this.getValidConditions(this.activeSqlFilter).length} condition(s)`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'filter-badge-remove';
+            removeBtn.innerHTML = '×';
+            removeBtn.title = 'Remove SQL filter';
+            removeBtn.addEventListener('click', () => this.clearSqlFilter(true));
+
+            sqlBadge.appendChild(labelSpan);
+            sqlBadge.appendChild(valueSpan);
+            sqlBadge.appendChild(removeBtn);
+
+            activeFiltersList.appendChild(sqlBadge);
+        }
+
+        // Create badges for classic filters
         Object.keys(filters).forEach(filterKey => {
-            
+
             const filterValue = filters[filterKey];
             const filterLabel = filterLabels[filterKey] || filterKey;
-            
+
             // Create badge element
             const badge = document.createElement('div');
             badge.className = 'filter-badge';
-            
+
             // Create badge content
             const labelSpan = document.createElement('span');
             labelSpan.className = 'filter-badge-label';
             labelSpan.textContent = `${filterLabel}:`;
-            
+
             const valueSpan = document.createElement('span');
             valueSpan.className = 'filter-badge-value';
             valueSpan.textContent = this.escapeHtml(filterValue);
-            
+
             const removeBtn = document.createElement('button');
             removeBtn.className = 'filter-badge-remove';
             removeBtn.innerHTML = '×';
             removeBtn.title = `Remove ${filterLabel} filter`;
             removeBtn.setAttribute('aria-label', `Remove ${filterLabel} filter`);
             removeBtn.addEventListener('click', () => this.clearIndividualFilter(filterKey));
-            
+
             badge.appendChild(labelSpan);
             badge.appendChild(valueSpan);
             badge.appendChild(removeBtn);
-            
+
             activeFiltersList.appendChild(badge);
         });
     }

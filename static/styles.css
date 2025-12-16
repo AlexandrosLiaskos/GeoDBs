@@ -643,6 +643,16 @@ select[id$="-filter"] option {
     transform: scale(1.1);
 }
 
+/* SQL Filter Badge - distinct styling */
+.filter-badge-sql {
+    background: rgba(49, 130, 206, 0.1);
+    border-color: var(--primary-color);
+}
+
+.filter-badge-sql .filter-badge-value {
+    color: var(--primary-color);
+}
+
 /* Filter dropdowns use native select behavior for accessibility and performance */
 
 
