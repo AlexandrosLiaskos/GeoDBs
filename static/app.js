@@ -106,7 +106,8 @@ class FloodMapApp {
             animateAddingMarkers: false,
             removeOutsideVisibleBounds: false,
             iconCreateFunction: function(cluster) {
-                const count = cluster.getChildCount();
+                // Each flood point has 2 layers (marker + clickArea), so divide by 2 to get actual count
+                const count = Math.round(cluster.getChildCount() / 2);
                 return new L.DivIcon({
                     html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
                     className: 'minimal-cluster',
