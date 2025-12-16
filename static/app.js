@@ -372,7 +372,7 @@ class FloodMapApp {
             // Years query - DISTINCT
             let yearsQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null);
             if (selectedFilters.location) yearsQuery = yearsQuery.eq('location_name', selectedFilters.location);
-            if (selectedFilters.deathsToll) yearsQuery = yearsQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            if (selectedFilters.deathsToll) yearsQuery = yearsQuery.eq('deaths_toll_int', selectedFilters.deathsToll);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
                 selectedFilters.tagFilters.forEach(tagFilter => {
                     yearsQuery = yearsQuery.eq(tagFilter.field, tagFilter.value);
@@ -384,7 +384,7 @@ class FloodMapApp {
             // Locations query - DISTINCT
             let locationsQuery = window.supabaseClient.from('floods').select('location_name').not('location_name', 'is', null);
             if (selectedFilters.year) locationsQuery = locationsQuery.eq('year', selectedFilters.year);
-            if (selectedFilters.deathsToll) locationsQuery = locationsQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            if (selectedFilters.deathsToll) locationsQuery = locationsQuery.eq('deaths_toll_int', selectedFilters.deathsToll);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
                 selectedFilters.tagFilters.forEach(tagFilter => {
                     locationsQuery = locationsQuery.eq(tagFilter.field, tagFilter.value);
@@ -393,8 +393,8 @@ class FloodMapApp {
             const locationsData = await this._fetchAllRecords(locationsQuery);
             const locations = this._getUniqueValuesWithCount(locationsData, 'location_name');
             
-            // Death Toll query - DISTINCT
-            let deathsTollQuery = window.supabaseClient.from('floods').select('deaths_toll').not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', ' ');
+            // Death Toll query - DISTINCT (using integer column)
+            let deathsTollQuery = window.supabaseClient.from('floods').select('deaths_toll_int').not('deaths_toll_int', 'is', null);
             if (selectedFilters.year) deathsTollQuery = deathsTollQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) deathsTollQuery = deathsTollQuery.eq('location_name', selectedFilters.location);
             if (selectedFilters.tagFilters && selectedFilters.tagFilters.length > 0) {
@@ -403,13 +403,13 @@ class FloodMapApp {
                 });
             }
             const deathsTollData = await this._fetchAllRecords(deathsTollQuery);
-            const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll');
+            const deathsToll = this._getUniqueValuesWithCount(deathsTollData, 'deaths_toll_int');
             
             // Event Names query - DISTINCT
             let eventNamesQuery = window.supabaseClient.from('floods').select('flood_event_name').not('flood_event_name', 'is', null).not('flood_event_name', 'eq', '');
             if (selectedFilters.year) eventNamesQuery = eventNamesQuery.eq('year', selectedFilters.year);
             if (selectedFilters.location) eventNamesQuery = eventNamesQuery.eq('location_name', selectedFilters.location);
-            if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll', selectedFilters.deathsToll);
+            if (selectedFilters.deathsToll) eventNamesQuery = eventNamesQuery.eq('deaths_toll_int', selectedFilters.deathsToll);
             const eventNamesData = await this._fetchAllRecords(eventNamesQuery);
             const eventNames = this._getUniqueValuesWithCount(eventNamesData, 'flood_event_name');
             
@@ -478,11 +478,9 @@ class FloodMapApp {
         // Convert the Set to an array and sort it
         const sortedValues = Array.from(uniqueValues);
         sortedValues.sort((a, b) => {
-            // Special handling for deaths_toll field: numeric sorting in ascending order
-            if (fieldName === 'deaths_toll') {
-                const numA = parseFloat(String(a).trim()) || 0;
-                const numB = parseFloat(String(b).trim()) || 0;
-                return numA - numB; // Sort numerically in ascending order (0, 1, 2, 5, 10, etc.)
+            // Special handling for deaths_toll_int field: numeric sorting in ascending order
+            if (fieldName === 'deaths_toll_int') {
+                return (a || 0) - (b || 0); // Sort numerically in ascending order (0, 1, 2, 5, 10, etc.)
             }
             // Ensure consistent sorting for strings and numbers
             if (typeof a === 'number' && typeof b === 'number') {
@@ -614,31 +612,31 @@ class FloodMapApp {
             let totalQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true });
             if (filters.year) totalQuery = totalQuery.eq('year', filters.year);
             if (filters.location) totalQuery = totalQuery.eq('location_name', filters.location);
-            if (filters.deathsToll) totalQuery = totalQuery.eq('deaths_toll', filters.deathsToll);
+            if (filters.deathsToll) totalQuery = totalQuery.eq('deaths_toll_int', filters.deathsToll);
             if (filters.eventName) totalQuery = totalQuery.eq('flood_event_name', filters.eventName);
             const { count: totalCount, error: totalError } = await totalQuery;
             if (totalError) throw totalError;
-            
+
             // Min year
             let minQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: true }).limit(1);
             if (filters.location) minQuery = minQuery.eq('location_name', filters.location);
-            if (filters.deathsToll) minQuery = minQuery.eq('deaths_toll', filters.deathsToll);
+            if (filters.deathsToll) minQuery = minQuery.eq('deaths_toll_int', filters.deathsToll);
             if (filters.eventName) minQuery = minQuery.eq('flood_event_name', filters.eventName);
             const { data: minData, error: minError } = await minQuery;
             if (minError) throw minError;
             let minYear = minData && minData.length > 0 ? minData[0].year : 'N/A';
-            
+
             // Max year
             let maxQuery = window.supabaseClient.from('floods').select('year').not('year', 'is', null).order('year', { ascending: false }).limit(1);
             if (filters.location) maxQuery = maxQuery.eq('location_name', filters.location);
-            if (filters.deathsToll) maxQuery = maxQuery.eq('deaths_toll', filters.deathsToll);
+            if (filters.deathsToll) maxQuery = maxQuery.eq('deaths_toll_int', filters.deathsToll);
             if (filters.eventName) maxQuery = maxQuery.eq('flood_event_name', filters.eventName);
             const { data: maxData, error: maxError } = await maxQuery;
             if (maxError) throw maxError;
             let maxYear = maxData && maxData.length > 0 ? maxData[0].year : 'N/A';
-            
-            // Events with casualties
-            let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll', 'is', null).not('deaths_toll', 'eq', '').not('deaths_toll', 'eq', '0').not('deaths_toll', 'eq', ' ').not('deaths_toll', 'eq', ' 0').not('deaths_toll', 'eq', '0 ');
+
+            // Events with casualties (use integer column - deaths > 0)
+            let casualtiesQuery = window.supabaseClient.from('floods').select('*', { count: 'exact', head: true }).not('deaths_toll_int', 'is', null).gt('deaths_toll_int', 0);
             if (filters.year) casualtiesQuery = casualtiesQuery.eq('year', filters.year);
             if (filters.location) casualtiesQuery = casualtiesQuery.eq('location_name', filters.location);
             if (filters.eventName) casualtiesQuery = casualtiesQuery.eq('flood_event_name', filters.eventName);
@@ -674,12 +672,12 @@ class FloodMapApp {
         this.isLoading = true;
 
         try {
-            // Build base query - include deaths_toll for tooltip
-            let baseQuery = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
+            // Build base query - include deaths_toll_int for tooltip
+            let baseQuery = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll_int, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
 
             if (filters.year) baseQuery = baseQuery.eq('year', filters.year);
             if (filters.location) baseQuery = baseQuery.eq('location_name', filters.location);
-            if (filters.deathsToll) baseQuery = baseQuery.eq('deaths_toll', filters.deathsToll);
+            if (filters.deathsToll) baseQuery = baseQuery.eq('deaths_toll_int', filters.deathsToll);
             if (filters.eventName) baseQuery = baseQuery.eq('flood_event_name', filters.eventName);
 
             // Use pagination to fetch all records (Supabase default limit is 1000)
@@ -743,7 +741,7 @@ class FloodMapApp {
             });
             
             // Add enhanced tooltip on hover with more info
-            const deathsToll = flood.deaths_toll && flood.deaths_toll !== '0' ? flood.deaths_toll : 'None';
+            const deathsToll = (flood.deaths_toll_int !== null && flood.deaths_toll_int !== undefined && flood.deaths_toll_int > 0) ? flood.deaths_toll_int : 'None';
             const cause = flood.cause_of_flood ? this.escapeHtml(flood.cause_of_flood) : 'N/A';
             
             const tooltipContent = `
@@ -817,7 +815,7 @@ class FloodMapApp {
         }
         
         try {
-            const { data: flood, error } = await window.supabaseClient.from('floods').select('id, date_of_commencement, year, latitude, longitude, location_name, flood_event_name, deaths_toll, rainfall_duration, cause_of_flood, rainfall_height, relevant_information, source').eq('id', floodId).single();
+            const { data: flood, error } = await window.supabaseClient.from('floods').select('id, date_of_commencement, year, latitude, longitude, location_name, flood_event_name, deaths_toll_int, rainfall_duration, cause_of_flood, rainfall_height, relevant_information, source').eq('id', floodId).single();
             if (error) throw error;
             
             // Add default reference if not present in database
@@ -847,7 +845,7 @@ class FloodMapApp {
             { key: 'year', label: 'Year' },
             { key: 'location_name', label: 'Location' },
             { key: 'flood_event_name', label: 'Event Name' },
-            { key: 'deaths_toll', label: 'Death Toll' },
+            { key: 'deaths_toll_int', label: 'Death Toll' },
             { key: 'cause_of_flood', label: 'Cause' },
             { key: 'source', label: 'Source' },
             { key: 'reference', label: 'Reference', isLink: true }
