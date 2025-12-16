@@ -296,6 +296,9 @@ class FloodMapApp {
         const clearSqlFilter = document.getElementById('clear-sql-filter');
 
         if (sqlFilterBtn && sqlFilterModal) {
+            // Initialize query builder
+            this.initQueryBuilder();
+
             sqlFilterBtn.addEventListener('click', () => {
                 sqlFilterModal.classList.add('active');
                 document.body.classList.add('modal-open');
@@ -1084,45 +1087,361 @@ class FloodMapApp {
         this.applyFilters();
     }
 
+    // Query Builder configuration
+    queryBuilderFields = [
+        { value: 'year', label: 'Year', type: 'number' },
+        { value: 'location_name', label: 'Location', type: 'text' },
+        { value: 'deaths_toll', label: 'Death Toll', type: 'number' },
+        { value: 'cause_of_flood', label: 'Cause of Flood', type: 'text' },
+        { value: 'flood_event_name', label: 'Event Name', type: 'text' }
+    ];
+
+    queryBuilderOperators = {
+        number: [
+            { value: 'eq', label: '=' },
+            { value: 'neq', label: '≠' },
+            { value: 'gt', label: '>' },
+            { value: 'gte', label: '≥' },
+            { value: 'lt', label: '<' },
+            { value: 'lte', label: '≤' },
+            { value: 'is_null', label: 'Is Empty' },
+            { value: 'is_not_null', label: 'Is Not Empty' }
+        ],
+        text: [
+            { value: 'eq', label: 'Equals' },
+            { value: 'neq', label: 'Not Equals' },
+            { value: 'ilike', label: 'Contains' },
+            { value: 'not_ilike', label: 'Does Not Contain' },
+            { value: 'starts', label: 'Starts With' },
+            { value: 'ends', label: 'Ends With' },
+            { value: 'is_null', label: 'Is Empty' },
+            { value: 'is_not_null', label: 'Is Not Empty' }
+        ]
+    };
+
+    queryConditions = [];
+    queryConditionId = 0;
+
+    initQueryBuilder() {
+        const addConditionBtn = document.getElementById('add-condition');
+        const addGroupBtn = document.getElementById('add-group');
+
+        if (addConditionBtn) {
+            addConditionBtn.addEventListener('click', () => this.addQueryCondition());
+        }
+        if (addGroupBtn) {
+            addGroupBtn.addEventListener('click', () => this.addQueryGroup());
+        }
+
+        // Add initial condition
+        this.addQueryCondition();
+    }
+
+    addQueryCondition(parentId = null) {
+        const id = ++this.queryConditionId;
+        const condition = { id, parentId, logic: 'AND', field: 'year', operator: 'eq', value: '' };
+        this.queryConditions.push(condition);
+        this.renderQueryConditions();
+        this.updateQueryPreview();
+        return id;
+    }
+
+    addQueryGroup() {
+        const groupId = ++this.queryConditionId;
+        const group = { id: groupId, isGroup: true, logic: 'AND', conditions: [] };
+        this.queryConditions.push(group);
+
+        // Add first condition to group
+        const conditionId = ++this.queryConditionId;
+        group.conditions.push({ id: conditionId, logic: 'AND', field: 'year', operator: 'eq', value: '' });
+
+        this.renderQueryConditions();
+        this.updateQueryPreview();
+    }
+
+    removeQueryCondition(id) {
+        // Remove from top level
+        this.queryConditions = this.queryConditions.filter(c => c.id !== id);
+
+        // Remove from groups
+        this.queryConditions.forEach(item => {
+            if (item.isGroup && item.conditions) {
+                item.conditions = item.conditions.filter(c => c.id !== id);
+            }
+        });
+
+        // Remove empty groups
+        this.queryConditions = this.queryConditions.filter(item =>
+            !item.isGroup || (item.conditions && item.conditions.length > 0)
+        );
+
+        this.renderQueryConditions();
+        this.updateQueryPreview();
+    }
+
+    addConditionToGroup(groupId) {
+        const group = this.queryConditions.find(c => c.id === groupId && c.isGroup);
+        if (group) {
+            const conditionId = ++this.queryConditionId;
+            group.conditions.push({ id: conditionId, logic: 'AND', field: 'year', operator: 'eq', value: '' });
+            this.renderQueryConditions();
+            this.updateQueryPreview();
+        }
+    }
+
+    updateQueryCondition(id, property, value) {
+        // Check top level
+        let condition = this.queryConditions.find(c => c.id === id);
+
+        // Check in groups
+        if (!condition) {
+            for (const item of this.queryConditions) {
+                if (item.isGroup && item.conditions) {
+                    condition = item.conditions.find(c => c.id === id);
+                    if (condition) break;
+                }
+            }
+        }
+
+        if (condition) {
+            condition[property] = value;
+
+            // If field changed, reset operator to first valid option
+            if (property === 'field') {
+                const fieldDef = this.queryBuilderFields.find(f => f.value === value);
+                const operators = this.queryBuilderOperators[fieldDef?.type || 'text'];
+                condition.operator = operators[0].value;
+                this.renderQueryConditions();
+            }
+
+            this.updateQueryPreview();
+        }
+    }
+
+    renderQueryConditions() {
+        const container = document.getElementById('query-conditions');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        this.queryConditions.forEach((item, index) => {
+            if (item.isGroup) {
+                container.appendChild(this.renderGroup(item, index));
+            } else {
+                container.appendChild(this.renderConditionRow(item, index));
+            }
+        });
+    }
+
+    renderConditionRow(condition, index, isInGroup = false) {
+        const row = document.createElement('div');
+        row.className = 'query-condition-row' + (isInGroup ? ' grouped' : '');
+        row.dataset.id = condition.id;
+
+        const fieldDef = this.queryBuilderFields.find(f => f.value === condition.field);
+        const operators = this.queryBuilderOperators[fieldDef?.type || 'text'];
+        const needsValue = !['is_null', 'is_not_null'].includes(condition.operator);
+
+        row.innerHTML = `
+            ${index > 0 ? `
+            <div class="condition-logic">
+                <select data-id="${condition.id}" data-prop="logic">
+                    <option value="AND" ${condition.logic === 'AND' ? 'selected' : ''}>AND</option>
+                    <option value="OR" ${condition.logic === 'OR' ? 'selected' : ''}>OR</option>
+                </select>
+            </div>` : '<div class="condition-logic" style="min-width:60px;"></div>'}
+            <div class="condition-field">
+                <select data-id="${condition.id}" data-prop="field">
+                    ${this.queryBuilderFields.map(f =>
+                        `<option value="${f.value}" ${condition.field === f.value ? 'selected' : ''}>${f.label}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="condition-operator">
+                <select data-id="${condition.id}" data-prop="operator">
+                    ${operators.map(op =>
+                        `<option value="${op.value}" ${condition.operator === op.value ? 'selected' : ''}>${op.label}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            ${needsValue ? `
+            <div class="condition-value">
+                <input type="${fieldDef?.type === 'number' ? 'number' : 'text'}"
+                       data-id="${condition.id}"
+                       data-prop="value"
+                       value="${this.escapeHtml(condition.value || '')}"
+                       placeholder="Enter value...">
+            </div>` : ''}
+            <button class="condition-remove" data-remove="${condition.id}" title="Remove condition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        `;
+
+        // Add event listeners
+        row.querySelectorAll('select, input').forEach(el => {
+            el.addEventListener('change', (e) => {
+                const id = parseInt(e.target.dataset.id);
+                const prop = e.target.dataset.prop;
+                this.updateQueryCondition(id, prop, e.target.value);
+            });
+            if (el.tagName === 'INPUT') {
+                el.addEventListener('input', (e) => {
+                    const id = parseInt(e.target.dataset.id);
+                    this.updateQueryCondition(id, 'value', e.target.value);
+                });
+            }
+        });
+
+        row.querySelector('.condition-remove')?.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.remove);
+            this.removeQueryCondition(id);
+        });
+
+        return row;
+    }
+
+    renderGroup(group, index) {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'query-group';
+        groupEl.dataset.id = group.id;
+
+        groupEl.innerHTML = `
+            <div class="query-group-header">
+                ${index > 0 ? `
+                <div class="condition-logic">
+                    <select data-id="${group.id}" data-prop="logic">
+                        <option value="AND" ${group.logic === 'AND' ? 'selected' : ''}>AND</option>
+                        <option value="OR" ${group.logic === 'OR' ? 'selected' : ''}>OR</option>
+                    </select>
+                </div>` : ''}
+                <span class="query-group-label">Group</span>
+                <div style="display:flex;gap:0.5rem;">
+                    <button class="btn-add-condition" data-add-to-group="${group.id}" style="padding:0.25rem 0.5rem;font-size:0.7rem;">+ Add</button>
+                    <button class="condition-remove" data-remove="${group.id}" title="Remove group">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="query-group-conditions"></div>
+        `;
+
+        const conditionsContainer = groupEl.querySelector('.query-group-conditions');
+        group.conditions.forEach((cond, i) => {
+            conditionsContainer.appendChild(this.renderConditionRow(cond, i, true));
+        });
+
+        // Event listeners
+        groupEl.querySelector('[data-add-to-group]')?.addEventListener('click', (e) => {
+            const gid = parseInt(e.currentTarget.dataset.addToGroup);
+            this.addConditionToGroup(gid);
+        });
+
+        groupEl.querySelector('.query-group-header > .condition-logic select')?.addEventListener('change', (e) => {
+            const id = parseInt(e.target.dataset.id);
+            this.updateQueryCondition(id, 'logic', e.target.value);
+        });
+
+        groupEl.querySelector('.query-group-header .condition-remove')?.addEventListener('click', (e) => {
+            const id = parseInt(e.currentTarget.dataset.remove);
+            this.removeQueryCondition(id);
+        });
+
+        return groupEl;
+    }
+
+    updateQueryPreview() {
+        const previewEl = document.getElementById('query-preview-text');
+        if (!previewEl) return;
+
+        const queryStr = this.buildQueryString(this.queryConditions);
+
+        if (!queryStr) {
+            previewEl.innerHTML = '<em>No conditions added</em>';
+        } else {
+            previewEl.innerHTML = queryStr;
+        }
+    }
+
+    buildQueryString(conditions, isNested = false) {
+        const parts = [];
+
+        conditions.forEach((item, index) => {
+            let part = '';
+
+            if (item.isGroup) {
+                const groupStr = this.buildQueryString(item.conditions, true);
+                if (groupStr) {
+                    part = `<span class="query-logic">(</span>${groupStr}<span class="query-logic">)</span>`;
+                }
+            } else {
+                const fieldDef = this.queryBuilderFields.find(f => f.value === item.field);
+                const operators = this.queryBuilderOperators[fieldDef?.type || 'text'];
+                const opDef = operators.find(o => o.value === item.operator);
+
+                if (item.operator === 'is_null') {
+                    part = `<span class="query-field">${fieldDef?.label || item.field}</span> <span class="query-operator">Is Empty</span>`;
+                } else if (item.operator === 'is_not_null') {
+                    part = `<span class="query-field">${fieldDef?.label || item.field}</span> <span class="query-operator">Is Not Empty</span>`;
+                } else if (item.value !== undefined && item.value !== '') {
+                    const displayValue = fieldDef?.type === 'number' ? item.value : `"${item.value}"`;
+                    part = `<span class="query-field">${fieldDef?.label || item.field}</span> <span class="query-operator">${opDef?.label || item.operator}</span> <span class="query-value">${this.escapeHtml(displayValue)}</span>`;
+                }
+            }
+
+            if (part) {
+                if (parts.length > 0) {
+                    parts.push(`<span class="query-logic"> ${item.logic} </span>${part}`);
+                } else {
+                    parts.push(part);
+                }
+            }
+        });
+
+        return parts.join('');
+    }
+
     // SQL Filter methods
     async applySqlFilter() {
-        const queryInput = document.getElementById('sql-query-input');
         const errorDiv = document.getElementById('sql-filter-error');
         const activeDiv = document.getElementById('sql-filter-active');
         const activeQuery = document.getElementById('sql-active-query');
 
-        if (!queryInput) return;
-
-        const query = queryInput.value.trim();
-
         // Clear previous error
         errorDiv?.classList.add('hidden');
 
-        if (!query) {
-            this.showSqlError('Please enter a query');
+        // Check if we have any valid conditions
+        const validConditions = this.getValidConditions(this.queryConditions);
+        if (validConditions.length === 0) {
+            this.showSqlError('Please add at least one complete condition');
             return;
         }
 
         try {
             this.showLoading(true);
 
-            // Build the Supabase query with SQL filter
-            let supabaseQuery = window.supabaseClient
+            // Build the Supabase query
+            let query = window.supabaseClient
                 .from('floods')
                 .select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood')
                 .not('latitude', 'is', null)
                 .not('longitude', 'is', null);
 
-            // Parse and apply the SQL WHERE clause
-            supabaseQuery = this.parseAndApplySqlFilter(supabaseQuery, query);
+            // Apply conditions
+            query = this.applyQueryConditions(query, this.queryConditions);
 
-            // Fetch all records with pagination
-            const data = await this._fetchAllRecordsFromQuery(supabaseQuery);
+            // Fetch all records
+            const data = await this._fetchAllRecordsFromQuery(query);
 
-            if (window.DEBUG_MODE) console.log(`SQL filter returned ${data.length} records`);
+            if (window.DEBUG_MODE) console.log(`Query builder returned ${data.length} records`);
 
-            // Store the active SQL filter
-            this.activeSqlFilter = query;
+            // Store active filter
+            this.activeSqlFilter = this.queryConditions;
 
             // Update UI
             this.currentData = data;
@@ -1131,7 +1450,7 @@ class FloodMapApp {
 
             // Show active filter indicator
             if (activeDiv && activeQuery) {
-                activeQuery.textContent = query;
+                activeQuery.innerHTML = this.buildQueryString(this.queryConditions);
                 activeDiv.classList.remove('hidden');
             }
 
@@ -1140,126 +1459,94 @@ class FloodMapApp {
             document.body.classList.remove('modal-open');
 
         } catch (error) {
-            console.error('SQL filter error:', error);
-            this.showSqlError(error.message || 'Invalid query syntax');
+            console.error('Query builder error:', error);
+            this.showSqlError(error.message || 'Query failed');
         } finally {
             this.showLoading(false);
         }
     }
 
-    parseAndApplySqlFilter(query, sqlWhere) {
-        // Allowed fields for filtering
-        const allowedFields = ['year', 'location_name', 'deaths_toll', 'cause_of_flood', 'flood_event_name'];
-
-        // Parse the SQL WHERE clause
-        // Support: =, !=, <, >, <=, >=, LIKE, ILIKE, AND, OR
-
-        // Split by AND/OR while preserving them
-        const parts = sqlWhere.split(/\s+(AND|OR)\s+/i);
-
-        let currentQuery = query;
-        let lastOperator = 'AND';
-
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i].trim();
-
-            if (part.toUpperCase() === 'AND' || part.toUpperCase() === 'OR') {
-                lastOperator = part.toUpperCase();
-                continue;
+    getValidConditions(conditions) {
+        const valid = [];
+        conditions.forEach(item => {
+            if (item.isGroup) {
+                valid.push(...this.getValidConditions(item.conditions));
+            } else if (['is_null', 'is_not_null'].includes(item.operator) ||
+                       (item.value !== undefined && item.value !== '')) {
+                valid.push(item);
             }
-
-            if (!part) continue;
-
-            // Parse individual condition
-            const condition = this.parseSqlCondition(part, allowedFields);
-
-            if (condition) {
-                if (lastOperator === 'OR') {
-                    // Supabase doesn't directly support OR in the same way
-                    // We'll use .or() for this
-                    currentQuery = currentQuery.or(`${condition.field}.${condition.operator}.${condition.value}`);
-                } else {
-                    // Apply the condition
-                    currentQuery = this.applyCondition(currentQuery, condition);
-                }
-            }
-        }
-
-        return currentQuery;
+        });
+        return valid;
     }
 
-    parseSqlCondition(condition, allowedFields) {
-        // Patterns for different operators
-        const patterns = [
-            { regex: /^(\w+)\s+ILIKE\s+'([^']+)'$/i, op: 'ilike' },
-            { regex: /^(\w+)\s+LIKE\s+'([^']+)'$/i, op: 'ilike' }, // Use ilike for case-insensitive
-            { regex: /^(\w+)\s+NOT\s+LIKE\s+'([^']+)'$/i, op: 'not.ilike' },
-            { regex: /^(\w+)\s*>=\s*(.+)$/, op: 'gte' },
-            { regex: /^(\w+)\s*<=\s*(.+)$/, op: 'lte' },
-            { regex: /^(\w+)\s*!=\s*(.+)$/, op: 'neq' },
-            { regex: /^(\w+)\s*<>\s*(.+)$/, op: 'neq' },
-            { regex: /^(\w+)\s*>\s*(.+)$/, op: 'gt' },
-            { regex: /^(\w+)\s*<\s*(.+)$/, op: 'lt' },
-            { regex: /^(\w+)\s*=\s*(.+)$/, op: 'eq' },
-            { regex: /^(\w+)\s+IS\s+NULL$/i, op: 'is', value: 'null' },
-            { regex: /^(\w+)\s+IS\s+NOT\s+NULL$/i, op: 'not.is', value: 'null' },
-        ];
-
-        for (const pattern of patterns) {
-            const match = condition.match(pattern.regex);
-            if (match) {
-                const field = match[1].toLowerCase();
-
-                // Validate field name
-                if (!allowedFields.includes(field)) {
-                    throw new Error(`Invalid field: ${field}. Allowed: ${allowedFields.join(', ')}`);
+    applyQueryConditions(query, conditions) {
+        conditions.forEach((item, index) => {
+            if (item.isGroup && item.conditions?.length > 0) {
+                // Build OR string for group if logic is OR
+                const orParts = [];
+                item.conditions.forEach(cond => {
+                    const condStr = this.buildConditionString(cond);
+                    if (condStr) orParts.push(condStr);
+                });
+                if (orParts.length > 0) {
+                    if (item.logic === 'OR' && index > 0) {
+                        query = query.or(orParts.join(','));
+                    } else {
+                        // Apply each condition with AND
+                        item.conditions.forEach(cond => {
+                            query = this.applySingleCondition(query, cond);
+                        });
+                    }
                 }
-
-                let value = pattern.value !== undefined ? pattern.value : match[2].trim();
-
-                // Remove quotes from string values
-                if (value.startsWith("'") && value.endsWith("'")) {
-                    value = value.slice(1, -1);
-                }
-
-                // Convert numeric values for numeric fields
-                if (['year', 'deaths_toll'].includes(field) && !isNaN(value)) {
-                    value = Number(value);
-                }
-
-                return { field, operator: pattern.op, value };
+            } else if (!item.isGroup) {
+                query = this.applySingleCondition(query, item);
             }
-        }
-
-        throw new Error(`Invalid condition: ${condition}`);
+        });
+        return query;
     }
 
-    applyCondition(query, condition) {
-        const { field, operator, value } = condition;
+    buildConditionString(cond) {
+        const { field, operator, value } = cond;
 
         switch (operator) {
-            case 'eq':
-                return query.eq(field, value);
-            case 'neq':
-                return query.neq(field, value);
-            case 'gt':
-                return query.gt(field, value);
-            case 'gte':
-                return query.gte(field, value);
-            case 'lt':
-                return query.lt(field, value);
-            case 'lte':
-                return query.lte(field, value);
-            case 'ilike':
-                return query.ilike(field, value);
-            case 'not.ilike':
-                return query.not(field, 'ilike', value);
-            case 'is':
-                return query.is(field, null);
-            case 'not.is':
-                return query.not(field, 'is', null);
-            default:
-                return query;
+            case 'eq': return `${field}.eq.${value}`;
+            case 'neq': return `${field}.neq.${value}`;
+            case 'gt': return `${field}.gt.${value}`;
+            case 'gte': return `${field}.gte.${value}`;
+            case 'lt': return `${field}.lt.${value}`;
+            case 'lte': return `${field}.lte.${value}`;
+            case 'ilike': return `${field}.ilike.%${value}%`;
+            case 'not_ilike': return `${field}.not.ilike.%${value}%`;
+            case 'starts': return `${field}.ilike.${value}%`;
+            case 'ends': return `${field}.ilike.%${value}`;
+            case 'is_null': return `${field}.is.null`;
+            case 'is_not_null': return `${field}.not.is.null`;
+            default: return null;
+        }
+    }
+
+    applySingleCondition(query, cond) {
+        const { field, operator, value } = cond;
+
+        // Skip invalid conditions
+        if (!['is_null', 'is_not_null'].includes(operator) && (value === undefined || value === '')) {
+            return query;
+        }
+
+        switch (operator) {
+            case 'eq': return query.eq(field, value);
+            case 'neq': return query.neq(field, value);
+            case 'gt': return query.gt(field, value);
+            case 'gte': return query.gte(field, value);
+            case 'lt': return query.lt(field, value);
+            case 'lte': return query.lte(field, value);
+            case 'ilike': return query.ilike(field, `%${value}%`);
+            case 'not_ilike': return query.not(field, 'ilike', `%${value}%`);
+            case 'starts': return query.ilike(field, `${value}%`);
+            case 'ends': return query.ilike(field, `%${value}`);
+            case 'is_null': return query.is(field, null);
+            case 'is_not_null': return query.not(field, 'is', null);
+            default: return query;
         }
     }
 
@@ -1287,11 +1574,13 @@ class FloodMapApp {
     }
 
     clearSqlFilter(reloadData = true) {
-        const queryInput = document.getElementById('sql-query-input');
         const errorDiv = document.getElementById('sql-filter-error');
         const activeDiv = document.getElementById('sql-filter-active');
 
-        if (queryInput) queryInput.value = '';
+        this.queryConditions = [];
+        this.queryConditionId = 0;
+        this.addQueryCondition(); // Add initial empty condition
+
         errorDiv?.classList.add('hidden');
         activeDiv?.classList.add('hidden');
 
