@@ -1522,8 +1522,9 @@ class FloodMapApp {
             return tollStr !== '' && tollStr !== '0';
         }).length;
 
-        // Update stats display
-        document.getElementById('total-events').textContent = totalCount.toLocaleString();
+        // Update stats display (use optional chaining for safety)
+        const totalEl = document.getElementById('total-events');
+        if (totalEl) totalEl.textContent = totalCount.toLocaleString();
 
         let yearRangeText;
         if (minYear === 'N/A' && maxYear === 'N/A') {
@@ -1531,8 +1532,12 @@ class FloodMapApp {
         } else {
             yearRangeText = `${minYear} - ${maxYear}`;
         }
-        document.getElementById('year-range').textContent = yearRangeText;
-        document.getElementById('events-with-deaths').textContent = casualtiesCount.toLocaleString();
+        const yearRangeEl = document.getElementById('year-range');
+        if (yearRangeEl) yearRangeEl.textContent = yearRangeText;
+
+        // Note: the HTML uses 'events-deaths' not 'events-with-deaths'
+        const eventsDeathsEl = document.getElementById('events-deaths');
+        if (eventsDeathsEl) eventsDeathsEl.textContent = casualtiesCount.toLocaleString();
     }
 
     getValidConditions(conditions) {
