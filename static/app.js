@@ -623,35 +623,27 @@ class FloodMapApp {
     
     async loadFloodData(filters = {}) {
         if (this.isLoading) return;
-        
+
         this.showLoading(true);
         this.isLoading = true;
-        
-        try {
-            // console.log('Loading flood data with filters:', filters);
-            
-            // Build query - include deaths_toll for tooltip
-            let query = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
 
-            if (filters.year) query = query.eq('year', filters.year);
-            if (filters.location) query = query.eq('location_name', filters.location);
-            if (filters.deathsToll) query = query.eq('deaths_toll', filters.deathsToll);
-            if (filters.eventName) query = query.eq('flood_event_name', filters.eventName);
-            
-            query = query.limit(2000);
-            
-            // console.log('Executing flood data query...');
-            const { data, error } = await query;
-            if (error) {
-                console.error('Query failed:', error);
-                throw error;
-            }
-            
+        try {
+            // Build base query - include deaths_toll for tooltip
+            let baseQuery = window.supabaseClient.from('floods').select('id, latitude, longitude, year, location_name, deaths_toll, cause_of_flood').not('latitude', 'is', null).not('longitude', 'is', null);
+
+            if (filters.year) baseQuery = baseQuery.eq('year', filters.year);
+            if (filters.location) baseQuery = baseQuery.eq('location_name', filters.location);
+            if (filters.deathsToll) baseQuery = baseQuery.eq('deaths_toll', filters.deathsToll);
+            if (filters.eventName) baseQuery = baseQuery.eq('flood_event_name', filters.eventName);
+
+            // Use pagination to fetch all records (Supabase default limit is 1000)
+            const data = await this._fetchAllRecords(baseQuery);
+
             if (window.DEBUG_MODE) console.log(`Successfully loaded ${data.length} flood records`);
             this.currentData = data;
             this.updateMap();
             this.updateVisiblePointsCount();
-            
+
         } catch (error) {
             console.error('❌ Error loading flood data:', error);
             console.error('Error message:', error.message);
