@@ -1708,30 +1708,50 @@ class FloodMapApp {
         // Show summary and create badges
         activeFiltersSummary.classList.remove('hidden');
 
-        // Add SQL filter badge first if active
+        // Add SQL filter badges - one for each condition
         if (hasSqlFilter) {
-            const sqlBadge = document.createElement('div');
-            sqlBadge.className = 'filter-badge filter-badge-sql';
+            const validConditions = this.getValidConditions(this.activeSqlFilter);
 
-            const labelSpan = document.createElement('span');
-            labelSpan.className = 'filter-badge-label';
-            labelSpan.textContent = 'Query:';
+            validConditions.forEach((condition, index) => {
+                const sqlBadge = document.createElement('div');
+                sqlBadge.className = 'filter-badge filter-badge-sql';
 
-            const valueSpan = document.createElement('span');
-            valueSpan.className = 'filter-badge-value';
-            valueSpan.textContent = `${this.getValidConditions(this.activeSqlFilter).length} condition(s)`;
+                // Get field label
+                const fieldDef = this.queryBuilderFields.find(f => f.value === condition.field);
+                const fieldLabel = fieldDef?.label || condition.field;
 
-            const removeBtn = document.createElement('button');
-            removeBtn.className = 'filter-badge-remove';
-            removeBtn.innerHTML = '×';
-            removeBtn.title = 'Remove SQL filter';
-            removeBtn.addEventListener('click', () => this.clearSqlFilter(true));
+                // Get operator label
+                const operators = this.queryBuilderOperators[fieldDef?.type || 'text'];
+                const opDef = operators?.find(o => o.value === condition.operator);
+                const opLabel = opDef?.label || condition.operator;
 
-            sqlBadge.appendChild(labelSpan);
-            sqlBadge.appendChild(valueSpan);
-            sqlBadge.appendChild(removeBtn);
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'filter-badge-label';
+                labelSpan.textContent = `${fieldLabel}`;
 
-            activeFiltersList.appendChild(sqlBadge);
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'filter-badge-value';
+
+                if (condition.operator === 'is_null') {
+                    valueSpan.textContent = 'Is Empty';
+                } else if (condition.operator === 'is_not_null') {
+                    valueSpan.textContent = 'Is Not Empty';
+                } else {
+                    valueSpan.textContent = `${opLabel} ${condition.value}`;
+                }
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'filter-badge-remove';
+                removeBtn.innerHTML = '×';
+                removeBtn.title = 'Clear all query filters';
+                removeBtn.addEventListener('click', () => this.clearSqlFilter(true));
+
+                sqlBadge.appendChild(labelSpan);
+                sqlBadge.appendChild(valueSpan);
+                sqlBadge.appendChild(removeBtn);
+
+                activeFiltersList.appendChild(sqlBadge);
+            });
         }
 
         // Create badges for classic filters
