@@ -1116,10 +1116,6 @@ class FloodMapApp {
         text: [
             { value: 'eq', label: 'Equals' },
             { value: 'neq', label: 'Not Equals' },
-            { value: 'ilike', label: 'Contains' },
-            { value: 'not_ilike', label: 'Does Not Contain' },
-            { value: 'starts', label: 'Starts With' },
-            { value: 'ends', label: 'Ends With' },
             { value: 'is_null', label: 'Is Empty' },
             { value: 'is_not_null', label: 'Is Not Empty' }
         ]
