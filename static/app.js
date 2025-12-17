@@ -106,8 +106,7 @@ class FloodMapApp {
             animateAddingMarkers: false,
             removeOutsideVisibleBounds: false,
             iconCreateFunction: function(cluster) {
-                // Each flood point has 2 layers (marker + clickArea), so divide by 2 to get actual count
-                const count = Math.round(cluster.getChildCount() / 2);
+                const count = cluster.getChildCount();
                 return new L.DivIcon({
                     html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
                     className: 'minimal-cluster',
@@ -710,48 +709,31 @@ class FloodMapApp {
     updateMap() {
         // Clear existing markers
         this.markerCluster.clearLayers();
-        
+
         // Create all markers at once for better performance
+        // Using single markers (not LayerGroup) for proper cluster handling
         const markers = this.currentData.map(flood => {
-            // Larger, cleaner markers for better visibility and clickability
+            // Single marker with larger radius for easier clicking
             const marker = L.circleMarker([flood.latitude, flood.longitude], {
-                radius: 10, // Even larger for easier clicking
+                radius: 12, // Larger radius for easier clicking
                 fillColor: this.getMarkerColor(flood),
                 color: '#000000',
-                weight: 2, // Thicker border for cleaner rendering
+                weight: 2,
                 opacity: 1,
-                fillOpacity: 0.95, // Slight transparency for overlapping markers
-                renderer: L.svg(), // Use SVG for cleaner rendering
-                bubblingMouseEvents: false, // Prevent event bubbling
-                pane: 'markerPane' // Ensure proper layering
-            });
-            
-            // Add larger invisible click area
-            const clickArea = L.circleMarker([flood.latitude, flood.longitude], {
-                radius: 16, // Invisible larger click area
-                fillColor: 'transparent',
-                color: 'transparent',
-                weight: 0,
-                fillOpacity: 0,
-                interactive: true,
+                fillOpacity: 0.9,
                 bubblingMouseEvents: false
             });
-            
-            // Direct click to show details - no popup
+
+            // Direct click to show details
             marker.on('click', (e) => {
                 L.DomEvent.stopPropagation(e);
                 this.showFloodDetails(flood.id);
             });
-            
-            clickArea.on('click', (e) => {
-                L.DomEvent.stopPropagation(e);
-                this.showFloodDetails(flood.id);
-            });
-            
+
             // Add enhanced tooltip on hover with more info
-            const deathsToll = (flood.deaths_toll_int !== null && flood.deaths_toll_int !== undefined && flood.deaths_toll_int > 0) ? flood.deaths_toll_int : 'None';
+            const deathsToll = flood.deaths_toll ? flood.deaths_toll : 'None';
             const cause = flood.cause_of_flood ? this.escapeHtml(flood.cause_of_flood) : 'N/A';
-            
+
             const tooltipContent = `
                 <div style="font-size: 12px; padding: 6px; line-height: 1.4;">
                     <strong style="font-size: 13px;">${this.escapeHtml(flood.location_name || 'Unknown')}</strong><br>
@@ -760,48 +742,37 @@ class FloodMapApp {
                     <span style="color: #666;">Cause:</span> ${cause}
                 </div>
             `;
-            
+
             marker.bindTooltip(tooltipContent, {
                 direction: 'top',
-                offset: [0, -10],
-                opacity: 0.9,
+                offset: [0, -12],
+                opacity: 0.95,
                 className: 'minimal-tooltip'
             });
-            
-            // Sync hover effects
-            clickArea.on('mouseover', () => {
-                marker.setStyle({ weight: 3, fillOpacity: 1 });
-                marker.openTooltip();
-            });
-            
-            clickArea.on('mouseout', () => {
-                marker.setStyle({ weight: 2, fillOpacity: 0.95 });
-                marker.closeTooltip();
-            });
-            
+
+            // Hover effects
             marker.on('mouseover', () => {
-                marker.setStyle({ weight: 3, fillOpacity: 1 });
+                marker.setStyle({ weight: 3, fillOpacity: 1, radius: 14 });
             });
-            
+
             marker.on('mouseout', () => {
-                marker.setStyle({ weight: 2, fillOpacity: 0.95 });
+                marker.setStyle({ weight: 2, fillOpacity: 0.9, radius: 12 });
             });
-            
-            // Return both as a layer group
-            return L.layerGroup([marker, clickArea]);
+
+            return marker;
         });
-        
+
         // Add all markers at once
         if (markers.length > 0) {
             this.markerCluster.addLayers(markers);
-            
+
             // Fit bounds without animation
             const bounds = this.markerCluster.getBounds();
             if (bounds.isValid()) {
                 this.map.fitBounds(bounds.pad(0.05));
             }
         }
-        
+
         this.updateVisiblePointsCount();
     }
     
