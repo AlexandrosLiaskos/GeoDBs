@@ -102,20 +102,17 @@ class FloodMapApp {
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
             maxClusterRadius: 40,
-            disableClusteringAtZoom: 15, // Show individual markers at zoom 15+
+            disableClusteringAtZoom: 19, // Never disable clustering - always show badges
             singleMarkerMode: false,
             animate: false,
             animateAddingMarkers: false,
             removeOutsideVisibleBounds: false,
             iconCreateFunction: function(cluster) {
                 const count = cluster.getChildCount();
-                // Show "1" badge for single markers until zoom 15
-                const size = count === 1 ? 28 : 36;
-                const fontSize = count === 1 ? 12 : 14;
                 return new L.DivIcon({
-                    html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: ' + size + 'px; height: ' + size + 'px; display: flex; align-items: center; justify-content: center; font-size: ' + fontSize + 'px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
+                    html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
                     className: 'minimal-cluster',
-                    iconSize: new L.Point(size, size)
+                    iconSize: new L.Point(36, 36)
                 });
             }
         });
@@ -716,17 +713,18 @@ class FloodMapApp {
         this.markerCluster.clearLayers();
 
         // Create all markers at once for better performance
-        // Using single markers (not LayerGroup) for proper cluster handling
+        // Using DivIcon markers that look like clusters with "1" badge
         const markers = this.currentData.map(flood => {
-            // Single marker
-            const marker = L.circleMarker([flood.latitude, flood.longitude], {
-                radius: 10,
-                fillColor: this.getMarkerColor(flood),
-                color: '#000000',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.9,
-                bubblingMouseEvents: false
+            // Create marker with "1" badge (looks like a cluster)
+            const icon = L.divIcon({
+                html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif;">1</div>',
+                className: 'single-marker-cluster',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            const marker = L.marker([flood.latitude, flood.longitude], {
+                icon: icon
             });
 
             // Direct click to show details
@@ -750,18 +748,9 @@ class FloodMapApp {
 
             marker.bindTooltip(tooltipContent, {
                 direction: 'top',
-                offset: [0, -12],
+                offset: [0, -14],
                 opacity: 0.95,
                 className: 'minimal-tooltip'
-            });
-
-            // Hover effects
-            marker.on('mouseover', () => {
-                marker.setStyle({ weight: 3, fillOpacity: 1, radius: 12 });
-            });
-
-            marker.on('mouseout', () => {
-                marker.setStyle({ weight: 2, fillOpacity: 0.9, radius: 10 });
             });
 
             return marker;
