@@ -102,17 +102,20 @@ class FloodMapApp {
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
             maxClusterRadius: 40,
-            disableClusteringAtZoom: 18, // Higher zoom to keep clustering longer
+            disableClusteringAtZoom: 15, // Show individual markers at zoom 15+
             singleMarkerMode: false,
             animate: false,
             animateAddingMarkers: false,
             removeOutsideVisibleBounds: false,
             iconCreateFunction: function(cluster) {
                 const count = cluster.getChildCount();
+                // Show "1" badge for single markers until zoom 15
+                const size = count === 1 ? 28 : 36;
+                const fontSize = count === 1 ? 12 : 14;
                 return new L.DivIcon({
-                    html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
+                    html: '<div style="background: #000; color: #fff; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.3); border-radius: 50%; width: ' + size + 'px; height: ' + size + 'px; display: flex; align-items: center; justify-content: center; font-size: ' + fontSize + 'px; font-weight: 600; font-family: Inter, sans-serif;">' + count + '</div>',
                     className: 'minimal-cluster',
-                    iconSize: new L.Point(36, 36)
+                    iconSize: new L.Point(size, size)
                 });
             }
         });
