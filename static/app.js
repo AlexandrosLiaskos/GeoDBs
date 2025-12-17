@@ -97,11 +97,13 @@ class FloodMapApp {
         // Initialize marker cluster without spider connections
         this.markerCluster = L.markerClusterGroup({
             chunkedLoading: true,
-            spiderfyOnMaxZoom: false, // Disable spider connections
+            spiderfyOnMaxZoom: true, // Enable spider for overlapping points
+            spiderLegPolylineOptions: { weight: 1.5, color: '#333', opacity: 0.5 },
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
             maxClusterRadius: 40,
-            disableClusteringAtZoom: 11,
+            disableClusteringAtZoom: 18, // Higher zoom to keep clustering longer
+            singleMarkerMode: false,
             animate: false,
             animateAddingMarkers: false,
             removeOutsideVisibleBounds: false,
@@ -713,9 +715,9 @@ class FloodMapApp {
         // Create all markers at once for better performance
         // Using single markers (not LayerGroup) for proper cluster handling
         const markers = this.currentData.map(flood => {
-            // Single marker with larger radius for easier clicking
+            // Single marker
             const marker = L.circleMarker([flood.latitude, flood.longitude], {
-                radius: 12, // Larger radius for easier clicking
+                radius: 10,
                 fillColor: this.getMarkerColor(flood),
                 color: '#000000',
                 weight: 2,
@@ -752,11 +754,11 @@ class FloodMapApp {
 
             // Hover effects
             marker.on('mouseover', () => {
-                marker.setStyle({ weight: 3, fillOpacity: 1, radius: 14 });
+                marker.setStyle({ weight: 3, fillOpacity: 1, radius: 12 });
             });
 
             marker.on('mouseout', () => {
-                marker.setStyle({ weight: 2, fillOpacity: 0.9, radius: 12 });
+                marker.setStyle({ weight: 2, fillOpacity: 0.9, radius: 10 });
             });
 
             return marker;
