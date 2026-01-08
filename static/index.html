@@ -83,6 +83,10 @@
                         </div>
                     </div>
 
+                    <div class="welcome-contribute">
+                        <p><strong>Contribute data from your region:</strong> <a href="#" id="welcome-submit-data-link">Submit Your Data</a></p>
+                    </div>
+
                     <div class="welcome-footer">
                         <button id="enter-webgis" class="btn-welcome-enter">Enter Map</button>
                     </div>
@@ -273,6 +277,8 @@
                 <span class="footer-divider">|</span>
                 <button id="references-btn" class="references-btn">References</button>
                 <span class="footer-divider">|</span>
+                <button id="submit-data-btn" class="references-btn">Submit Data</button>
+                <span class="footer-divider">|</span>
                 <a href="https://github.com/AlexandrosLiaskos/GeoDBs" target="_blank" rel="noopener" class="github-link" title="View on GitHub" style="color: inherit; text-decoration: none;">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle;">
                         <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -292,6 +298,119 @@
                     <div class="reference-item">
                         <p class="citation-label">How to cite:</p>
                         <p>Evelpidou, N., Cartalis, C., Karkani, A., Saitis, G., Philippopoulos, K., & Spyrou, E. (2023). A GIS-Based Assessment of Flood Hazard through Track Records over the 1886–2022 Period in Greece. <em>Climate</em>, 11, 226. <a href="https://doi.org/10.3390/cli11110226" target="_blank" rel="noopener">https://doi.org/10.3390/cli11110226</a> Interactive map available at: <a href="https://HistoricFloods.org" target="_blank" rel="noopener">https://HistoricFloods.org</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Data Modal -->
+        <div id="submit-data-modal" class="modal submit-data-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Submit Your Data</h3>
+                    <button class="modal-close" id="close-submit-data">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="submit-data-intro">
+                        <p>Contribute flood data from your region to expand the Historic Floods database. We welcome submissions from researchers, institutions, and government agencies worldwide.</p>
+                    </div>
+
+                    <div class="submit-data-section">
+                        <h4>Accepted Formats</h4>
+                        <ul class="format-list">
+                            <li><strong>CSV (.csv)</strong> - preferred</li>
+                            <li><strong>Excel (.xlsx)</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="submit-data-section">
+                        <h4>Required Fields</h4>
+                        <div class="template-table-wrapper">
+                            <table class="template-table">
+                                <thead>
+                                    <tr>
+                                        <th>Column</th>
+                                        <th>Format</th>
+                                        <th>Description</th>
+                                        <th>Example</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>date_of_commencement</code></td>
+                                        <td>YYYY-MM-DD</td>
+                                        <td>Date when the flood started</td>
+                                        <td>1924-11-04</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>latitude</code></td>
+                                        <td>Decimal (WGS84)</td>
+                                        <td>Location latitude</td>
+                                        <td>37.0384673</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>longitude</code></td>
+                                        <td>Decimal (WGS84)</td>
+                                        <td>Location longitude</td>
+                                        <td>22.1104259</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>location_name</code></td>
+                                        <td>Text (uppercase)</td>
+                                        <td>Administrative region</td>
+                                        <td>MESSINIA</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>flood_event_name</code></td>
+                                        <td>Text</td>
+                                        <td>Specific place or event name</td>
+                                        <td>KALAMATA</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>source</code></td>
+                                        <td>URL or citation</td>
+                                        <td>Data source reference</td>
+                                        <td>https://example.org</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>deaths_toll_int</code></td>
+                                        <td>Integer</td>
+                                        <td>Number of deaths (empty if unknown, 0 if none)</td>
+                                        <td>16</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>cause_of_flood</code></td>
+                                        <td>Text</td>
+                                        <td>What caused the flood (empty if unknown)</td>
+                                        <td>Heavy rainfall</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>relevant_information</code></td>
+                                        <td>Text</td>
+                                        <td>Additional notes (empty if none)</td>
+                                        <td>Bridge collapsed</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="submit-data-actions">
+                        <button id="download-template-btn" class="btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download Template (CSV)
+                        </button>
+                        <button id="send-email-btn" class="btn-primary">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            Send via Email
+                        </button>
                     </div>
                 </div>
             </div>

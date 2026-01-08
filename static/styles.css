@@ -3426,3 +3426,179 @@ body.sidebar-open {
 body.modal-open {
     overflow: hidden !important;
 }
+
+/* ===== SUBMIT DATA MODAL ===== */
+.submit-data-modal .modal-content {
+    max-width: 800px;
+}
+
+.submit-data-intro {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.submit-data-intro p {
+    margin: 0;
+}
+
+.submit-data-section {
+    margin-bottom: 1.5rem;
+}
+
+.submit-data-section h4 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.format-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.format-list li {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.notes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.notes-list li {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.notes-list li:last-child {
+    border-bottom: none;
+}
+
+/* Template Table */
+.template-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.template-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.template-table th,
+.template-table td {
+    padding: 0.625rem 0.75rem;
+    text-align: left;
+    border: 1px solid var(--border-color);
+}
+
+.template-table th {
+    background: var(--background-tertiary);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+}
+
+.template-table td {
+    color: var(--text-primary);
+}
+
+.template-table code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: var(--primary-color);
+}
+
+.template-table tr:hover td {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+/* Submit Data Actions */
+.submit-data-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.submit-data-actions .btn-primary {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Welcome modal contribute link */
+.welcome-contribute {
+    margin-bottom: 1.5rem;
+    padding: 0.875rem 1rem;
+    background: rgba(0, 102, 255, 0.05);
+    border: 1px solid rgba(0, 102, 255, 0.15);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.welcome-contribute p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.welcome-contribute a {
+    color: var(--accent-blue);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.welcome-contribute a:hover {
+    text-decoration: none;
+}
+
+/* Responsive Submit Data Modal */
+@media (max-width: 768px) {
+    .submit-data-modal .modal-content {
+        max-width: 95%;
+    }
+
+    .submit-data-actions {
+        flex-direction: column;
+    }
+
+    .format-list {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .template-table {
+        font-size: 0.7rem;
+    }
+
+    .template-table th,
+    .template-table td {
+        padding: 0.5rem;
+    }
+
+    .template-table code {
+        font-size: 0.65rem;
+    }
+}
