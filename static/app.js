@@ -289,6 +289,73 @@ class FloodMapApp {
             });
         }
 
+        // Submit Data modal controls
+        const submitDataBtn = document.getElementById('submit-data-btn');
+        const submitDataModal = document.getElementById('submit-data-modal');
+        const closeSubmitData = document.getElementById('close-submit-data');
+        const downloadTemplateBtn = document.getElementById('download-template-btn');
+        const sendEmailBtn = document.getElementById('send-email-btn');
+        const welcomeSubmitDataLink = document.getElementById('welcome-submit-data-link');
+
+        if (submitDataBtn && submitDataModal) {
+            submitDataBtn.addEventListener('click', () => {
+                submitDataModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+
+            if (closeSubmitData) {
+                closeSubmitData.addEventListener('click', () => {
+                    submitDataModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                });
+            }
+
+            // Close when clicking outside modal content
+            submitDataModal.addEventListener('click', (event) => {
+                if (event.target === submitDataModal) {
+                    submitDataModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // ESC key to close submit data modal
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && submitDataModal.classList.contains('active')) {
+                    submitDataModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // Download CSV template
+            if (downloadTemplateBtn) {
+                downloadTemplateBtn.addEventListener('click', () => {
+                    this.downloadCSVTemplate();
+                });
+            }
+
+            // Send email button
+            if (sendEmailBtn) {
+                sendEmailBtn.addEventListener('click', () => {
+                    this.openSubmitEmail();
+                });
+            }
+        }
+
+        // Welcome modal link to Submit Data
+        if (welcomeSubmitDataLink && submitDataModal) {
+            welcomeSubmitDataLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Close welcome modal first
+                const welcomeModal = document.getElementById('welcome-modal');
+                if (welcomeModal) {
+                    welcomeModal.classList.remove('active');
+                }
+                // Open submit data modal
+                submitDataModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+        }
+
         // SQL Filter modal controls
         const sqlFilterBtn = document.getElementById('sql-filter-btn');
         const sqlFilterModal = document.getElementById('sql-filter-modal');
@@ -1911,6 +1978,96 @@ class FloodMapApp {
         // Store event ID in session storage and redirect to submissions page
         sessionStorage.setItem('reportEventId', eventId);
         window.open('/submissions', '_blank');
+    }
+
+    // Download CSV template for data submission
+    downloadCSVTemplate() {
+        const headers = [
+            'date_of_commencement',
+            'latitude',
+            'longitude',
+            'location_name',
+            'flood_event_name',
+            'source',
+            'deaths_toll_int',
+            'cause_of_flood',
+            'relevant_information'
+        ];
+
+        // Example row with placeholder data
+        const exampleRow = [
+            '1924-11-04',
+            '37.0384673',
+            '22.1104259',
+            'MESSINIA',
+            'KALAMATA',
+            'https://example.org/source',
+            '16',
+            'Heavy rainfall',
+            'Example row - delete this and add your data'
+        ];
+
+        // Create CSV content
+        const csvContent = [
+            headers.join(','),
+            exampleRow.join(',')
+        ].join('\n');
+
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'historic_floods_template.csv');
+        link.style.visibility = 'hidden';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        URL.revokeObjectURL(url);
+    }
+
+    // Open email client with pre-filled submission template
+    openSubmitEmail() {
+        const recipients = 'alexliaskos@geol.uoa.gr,evelpidou@geol.uoa.gr';
+        const subject = 'Historic Floods Data Submission';
+        
+        const body = `Dear Historic Floods Team,
+
+Please find attached flood data for inclusion in the Historic Floods database.
+
+SUBMISSION DETAILS
+==================
+Region/Country: [Please specify]
+Time Period: [e.g., 1900-2020]
+Number of Records: [Please specify]
+
+CONTRIBUTORS
+============
+Name(s): [Your name and co-contributors]
+Affiliation: [University/Institution/Organization]
+Contact Email: [Your email address]
+
+ADDITIONAL NOTES
+================
+[Any additional information about the data, sources, or methodology]
+
+Best regards,
+[Your name]
+
+---
+Please attach your CSV or Excel file containing the flood data to this email.
+Ensure the data follows the template format available at: https://historicfloods.org`;
+
+        // Encode for mailto URL
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+        
+        const mailtoUrl = `mailto:${recipients}?subject=${encodedSubject}&body=${encodedBody}`;
+        
+        window.location.href = mailtoUrl;
     }
 }
 
