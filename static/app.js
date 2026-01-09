@@ -368,6 +368,8 @@ class FloodMapApp {
             this.initQueryBuilder();
 
             sqlFilterBtn.addEventListener('click', () => {
+                // Re-render conditions to populate value dropdowns with filterOptions
+                this.renderQueryConditions();
                 sqlFilterModal.classList.add('active');
                 document.body.classList.add('modal-open');
             });
@@ -1575,29 +1577,83 @@ class FloodMapApp {
     }
 
     applyQueryConditions(query, conditions) {
-        conditions.forEach((item, index) => {
-            if (item.isGroup && item.conditions?.length > 0) {
-                // Build OR string for group if logic is OR
-                const orParts = [];
-                item.conditions.forEach(cond => {
-                    const condStr = this.buildConditionString(cond);
-                    if (condStr) orParts.push(condStr);
-                });
-                if (orParts.length > 0) {
-                    if (item.logic === 'OR' && index > 0) {
-                        query = query.or(orParts.join(','));
-                    } else {
-                        // Apply each condition with AND
-                        item.conditions.forEach(cond => {
-                            query = this.applySingleCondition(query, cond);
-                        });
-                    }
+        // Flatten and filter valid conditions (excluding groups for now, handle them inline)
+        const validItems = conditions.filter(item => {
+            if (item.isGroup) return item.conditions?.length > 0;
+            if (['is_null', 'is_not_null'].includes(item.operator)) return true;
+            return item.value !== undefined && item.value !== '';
+        });
+
+        if (validItems.length === 0) return query;
+
+        // Check if any non-first item has OR logic
+        const hasOrLogic = validItems.some((item, index) => index > 0 && item.logic === 'OR');
+
+        if (!hasOrLogic) {
+            // All AND logic - simple chaining (original behavior, but working)
+            validItems.forEach(item => {
+                if (item.isGroup && item.conditions?.length > 0) {
+                    item.conditions.forEach(cond => {
+                        query = this.applySingleCondition(query, cond);
+                    });
+                } else if (!item.isGroup) {
+                    query = this.applySingleCondition(query, item);
                 }
-            } else if (!item.isGroup) {
-                query = this.applySingleCondition(query, item);
+            });
+            return query;
+        }
+
+        // Has OR logic - group conditions by OR boundaries
+        // Each OR creates a new group; AND conditions stay in current group
+        const orGroups = [];
+        let currentGroup = [];
+
+        validItems.forEach((item, index) => {
+            if (index > 0 && item.logic === 'OR') {
+                // Push current group and start new one
+                if (currentGroup.length > 0) {
+                    orGroups.push([...currentGroup]);
+                }
+                currentGroup = [item];
+            } else {
+                currentGroup.push(item);
             }
         });
-        return query;
+
+        // Push final group
+        if (currentGroup.length > 0) {
+            orGroups.push(currentGroup);
+        }
+
+        // Build OR string for Supabase
+        // Each group becomes either a single condition or an and(...) expression
+        const orParts = orGroups.map(group => {
+            // Flatten all conditions in this group (including from nested groups)
+            const condStrings = [];
+            
+            group.forEach(item => {
+                if (item.isGroup && item.conditions?.length > 0) {
+                    item.conditions.forEach(cond => {
+                        const str = this.buildConditionString(cond);
+                        if (str) condStrings.push(str);
+                    });
+                } else if (!item.isGroup) {
+                    const str = this.buildConditionString(item);
+                    if (str) condStrings.push(str);
+                }
+            });
+
+            if (condStrings.length === 0) return null;
+            if (condStrings.length === 1) return condStrings[0];
+            
+            // Multiple conditions in group - wrap with and()
+            return `and(${condStrings.join(',')})`;
+        }).filter(Boolean);
+
+        if (orParts.length === 0) return query;
+
+        // Apply the OR expression
+        return query.or(orParts.join(','));
     }
 
     buildConditionString(cond) {
