@@ -356,6 +356,92 @@ class FloodMapApp {
             });
         }
 
+        // Report Issue modal controls
+        const reportBugBtn = document.getElementById('report-bug-btn');
+        const reportBugModal = document.getElementById('report-bug-modal');
+        const closeReportBug = document.getElementById('close-report-bug');
+        const sendBugReportBtn = document.getElementById('send-bug-report-btn');
+
+        if (reportBugBtn && reportBugModal) {
+            reportBugBtn.addEventListener('click', () => {
+                reportBugModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+
+            if (closeReportBug) {
+                closeReportBug.addEventListener('click', () => {
+                    reportBugModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                });
+            }
+
+            // Close when clicking outside modal content
+            reportBugModal.addEventListener('click', (event) => {
+                if (event.target === reportBugModal) {
+                    reportBugModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // ESC key to close report bug modal
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && reportBugModal.classList.contains('active')) {
+                    reportBugModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // Send bug report button
+            if (sendBugReportBtn) {
+                sendBugReportBtn.addEventListener('click', () => {
+                    this.openReportBugEmail();
+                });
+            }
+        }
+
+        // Submit Suggestion modal controls
+        const submitSuggestionBtn = document.getElementById('submit-suggestion-btn');
+        const submitSuggestionModal = document.getElementById('submit-suggestion-modal');
+        const closeSubmitSuggestion = document.getElementById('close-submit-suggestion');
+        const sendSuggestionBtn = document.getElementById('send-suggestion-btn');
+
+        if (submitSuggestionBtn && submitSuggestionModal) {
+            submitSuggestionBtn.addEventListener('click', () => {
+                submitSuggestionModal.classList.add('active');
+                document.body.classList.add('modal-open');
+            });
+
+            if (closeSubmitSuggestion) {
+                closeSubmitSuggestion.addEventListener('click', () => {
+                    submitSuggestionModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                });
+            }
+
+            // Close when clicking outside modal content
+            submitSuggestionModal.addEventListener('click', (event) => {
+                if (event.target === submitSuggestionModal) {
+                    submitSuggestionModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // ESC key to close suggestion modal
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && submitSuggestionModal.classList.contains('active')) {
+                    submitSuggestionModal.classList.remove('active');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+
+            // Send suggestion button
+            if (sendSuggestionBtn) {
+                sendSuggestionBtn.addEventListener('click', () => {
+                    this.openSuggestionEmail();
+                });
+            }
+        }
+
         // SQL Filter modal controls
         const sqlFilterBtn = document.getElementById('sql-filter-btn');
         const sqlFilterModal = document.getElementById('sql-filter-modal');
@@ -2116,6 +2202,69 @@ Best regards,
 ---
 Please attach your CSV or Excel file containing the flood data to this email.
 Ensure the data follows the template format available at: https://historicfloods.org`;
+
+        // Encode for mailto URL
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+        
+        const mailtoUrl = `mailto:${recipients}?subject=${encodedSubject}&body=${encodedBody}`;
+        
+        window.location.href = mailtoUrl;
+    }
+
+    // Open email client with pre-filled bug report template
+    openReportBugEmail() {
+        const recipients = 'alexliaskos@geol.uoa.gr,evelpidou@geol.uoa.gr';
+        const subject = 'Historic Floods - Issue Report';
+        
+        const body = `Dear Historic Floods Team,
+
+I would like to report an issue with the website.
+
+ISSUE DETAILS
+=============
+Type: [Bug / Data Error]
+
+Description:
+[Please describe the problem you encountered]
+
+Where it happened:
+[e.g., Map, Filters, Query Builder, specific flood event #123]
+
+Best regards,
+[Your name]`;
+
+        // Encode for mailto URL
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+        
+        const mailtoUrl = `mailto:${recipients}?subject=${encodedSubject}&body=${encodedBody}`;
+        
+        window.location.href = mailtoUrl;
+    }
+
+
+    // Open email client with pre-filled suggestion template
+    openSuggestionEmail() {
+        const recipients = 'alexliaskos@geol.uoa.gr,evelpidou@geol.uoa.gr';
+        const subject = 'Historic Floods - Feature Suggestion';
+        
+        const body = `Dear Historic Floods Team,
+
+I have a suggestion for the Historic Floods website.
+
+SUGGESTION
+==========
+Type: [New Feature / Improvement / Data Addition]
+
+Description:
+[Please describe your idea]
+
+Why it would be useful:
+[How would this help users?]
+
+Best regards,
+[Your name]`;
 
         // Encode for mailto URL
         const encodedSubject = encodeURIComponent(subject);
