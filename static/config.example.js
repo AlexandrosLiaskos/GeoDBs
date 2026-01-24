@@ -72,11 +72,11 @@ const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 // Validate configuration
 function validateConfig() {
-    const isConfigured = SUPABASE_URL && 
-                        SUPABASE_ANON_KEY && 
-                        SUPABASE_URL !== 'YOUR_SUPABASE_URL' && 
+    const isConfigured = SUPABASE_URL &&
+                        SUPABASE_ANON_KEY &&
+                        SUPABASE_URL !== 'YOUR_SUPABASE_URL' &&
                         SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
-    
+
     if (!isConfigured) {
         console.error('⚠️ Supabase credentials not configured!');
         console.error('For local development: Edit static/config.js and replace placeholder values');
@@ -84,7 +84,7 @@ function validateConfig() {
         console.error('See README.md for detailed configuration instructions');
         return false;
     }
-    
+
     return true;
 }
 
@@ -95,27 +95,27 @@ function validateConfig() {
         console.error('❌ Supabase library not loaded. Please check the CDN script in index.html.');
         return;
     }
-    
+
     // Validate configuration
     if (!validateConfig()) {
         console.error('❌ Cannot initialize Supabase client without valid credentials');
         return;
     }
-    
+
     try {
         // Destructure createClient from the global supabase object
         const { createClient } = supabase;
-        
+
         // Initialize the Supabase client
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
-        // Expose the client globally for use by other scripts (e.g., app.js, submissions.js)
+
+        // Expose the client globally for use by other scripts (e.g., app.js)
         window.supabaseClient = supabaseClient;
-        
+
         // Log successful initialization
         console.log('✅ Supabase client initialized successfully');
         console.log('📍 Project URL:', SUPABASE_URL);
-        
+
     } catch (error) {
         console.error('❌ Failed to initialize Supabase client:', error);
         console.error('Please verify your credentials are correct');
