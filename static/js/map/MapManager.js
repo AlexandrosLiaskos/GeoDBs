@@ -169,7 +169,15 @@ class MapManager {
 
                 const btn = L.DomUtil.create('button', 'basemap-picker-btn', container);
                 btn.type = 'button';
-                btn.textContent = 'Basemap';
+                btn.setAttribute('aria-label', 'Basemap');
+                btn.title = 'Basemap';
+                btn.innerHTML = `
+                    <svg class="basemap-picker-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                        <path d="M9 3v15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                        <path d="M15 6v15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                    </svg>
+                `;
 
                 const panel = L.DomUtil.create('div', 'basemap-picker-panel', container);
                 panel.setAttribute('role', 'menu');

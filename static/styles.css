@@ -1179,18 +1179,31 @@ body.sidebar-collapsed .rail-btn:hover {
 }
 
 .basemap-picker-btn {
-    display: block;
-    width: auto;
-    min-width: 88px;
-    min-height: 34px;
-    padding: 0 10px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
     background: #fff;
     border: none;
     cursor: pointer;
     font-family: inherit;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.basemap-picker-btn:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+.basemap-picker-btn:active {
+    background: rgba(0,0,0,0.08);
+}
+
+.basemap-picker-icon {
+    width: 18px;
+    height: 18px;
+    display: block;
 }
 
 .basemap-picker-panel {
