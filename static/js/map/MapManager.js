@@ -147,17 +147,37 @@ class MapManager {
         L.DomEvent.disableClickPropagation(container);
         L.DomEvent.disableScrollPropagation(container);
 
+        // Guard against "double toggle" on mobile where pointer/touch AND click both fire.
+        let lastToggleAt = 0;
+
         const toggleExpanded = (e) => {
-            // Some mobile browsers fire touchstart without a subsequent click.
+            const now = Date.now();
+            lastToggleAt = now;
+
             e.preventDefault?.();
             e.stopPropagation?.();
             container.classList.toggle('leaflet-control-layers-expanded');
         };
 
-        // Toggle on click/touch/pointer
-        toggle.addEventListener('click', toggleExpanded);
-        toggle.addEventListener('touchstart', toggleExpanded, { passive: false });
+        // Primary: pointerdown for modern mobile + desktop; prevents the follow-up click from toggling back.
         toggle.addEventListener('pointerdown', toggleExpanded);
+
+        // Fallback: touchstart for older iOS that may not emit pointer events.
+        toggle.addEventListener('touchstart', (e) => {
+            // If pointerdown already handled recently, ignore.
+            if (Date.now() - lastToggleAt < 400) return;
+            toggleExpanded(e);
+        }, { passive: false });
+
+        // Click guard: ignore a click that immediately follows a pointer/touch toggle.
+        toggle.addEventListener('click', (e) => {
+            if (Date.now() - lastToggleAt < 400) {
+                e.preventDefault?.();
+                e.stopPropagation?.();
+                return;
+            }
+            toggleExpanded(e);
+        });
 
         // Close when clicking outside
         document.addEventListener('click', (e) => {
