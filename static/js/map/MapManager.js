@@ -113,18 +113,18 @@ class MapManager {
     addControls() {
         // North arrow control
         this.addNorthArrow();
-        
+
         // Measurement tool (added after north arrow)
         if (window.MeasurementTool) {
             this.measurementTool = new window.MeasurementTool(this.map);
         }
-        
+
         // Layer control (added last, appears at bottom)
         const layerControl = L.control.layers(this.baseMaps, null, {
             position: 'topleft',
             collapsed: true
         }).addTo(this.map);
-        
+
         // Make layer control click-based instead of hover
         this.setupClickBasedLayerControl(layerControl);
     }
@@ -137,31 +137,47 @@ class MapManager {
         const container = layerControl.getContainer();
         const toggle = container.querySelector('.leaflet-control-layers-toggle');
         const list = container.querySelector('.leaflet-control-layers-list');
-        
+
         if (!toggle || !list) return;
-        
+
         // Add click-only class to disable hover
         container.classList.add('leaflet-control-layers-click');
-        
-        // Toggle on click
-        toggle.addEventListener('click', (e) => {
-            e.stopPropagation();
+
+        // Prevent the map from hijacking taps on the control (esp. mobile)
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        const toggleExpanded = (e) => {
+            // Some mobile browsers fire touchstart without a subsequent click.
+            e.preventDefault?.();
+            e.stopPropagation?.();
             container.classList.toggle('leaflet-control-layers-expanded');
-        });
-        
+        };
+
+        // Toggle on click/touch/pointer
+        toggle.addEventListener('click', toggleExpanded);
+        toggle.addEventListener('touchstart', toggleExpanded, { passive: false });
+        toggle.addEventListener('pointerdown', toggleExpanded);
+
         // Close when clicking outside
         document.addEventListener('click', (e) => {
             if (!container.contains(e.target)) {
                 container.classList.remove('leaflet-control-layers-expanded');
             }
         });
-        
+
         // Close when selecting a layer
         list.addEventListener('click', () => {
             setTimeout(() => {
                 container.classList.remove('leaflet-control-layers-expanded');
             }, 100);
         });
+
+        list.addEventListener('touchstart', () => {
+            setTimeout(() => {
+                container.classList.remove('leaflet-control-layers-expanded');
+            }, 100);
+        }, { passive: true });
     }
 
     /**

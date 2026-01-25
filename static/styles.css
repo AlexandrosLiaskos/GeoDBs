@@ -287,6 +287,53 @@ h6 { font-size: 0.75rem; }
     margin: 0;
 }
 
+/* Mobile header/layout tuning */
+@media (max-width: 768px) {
+    .header {
+        /* Reduce vertical whitespace on mobile */
+        padding: 0.75rem 0 0.25rem 0;
+    }
+
+    .header-content {
+        padding: 0 1rem;
+    }
+
+    .header h1 {
+        /* Make title readable on small screens */
+        font-size: 1.25rem;
+        margin-bottom: 0.2rem;
+        letter-spacing: 0.08em;
+    }
+
+    .subtitle {
+        /* Ensure subtitle is visible on mobile (some older rules may hide it) */
+        display: block !important;
+        font-size: 0.75rem;
+        letter-spacing: 0.03em;
+        opacity: 0.9;
+    }
+
+    .mobile-controls {
+        padding: 0.5rem 1rem;
+        gap: 0.5rem;
+    }
+
+    .mobile-toggle-btn {
+        padding: 0.6rem 1rem;
+    }
+
+    /* On mobile, the top tab rail inside the sidebar is redundant
+       because Filters/Search is controlled via the mobile buttons. */
+    .sidebar.active .tab-nav {
+        display: none;
+    }
+
+    /* With tab-nav hidden, reduce top padding so content starts higher */
+    .sidebar.active .sidebar-content {
+        padding-top: 1.25rem;
+    }
+}
+
 /* Navigation Bar - Positioned absolutely on the left */
 .header-nav {
     position: absolute;
