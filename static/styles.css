@@ -1172,6 +1172,62 @@ body.sidebar-collapsed .rail-btn:hover {
     display: none;
 }
 
+/* ===== MOBILE BASEMAP PICKER (touch-friendly) ===== */
+.basemap-picker {
+    background: #fff;
+    border: 1px solid var(--border-color);
+}
+
+.basemap-picker-btn {
+    display: block;
+    width: auto;
+    min-width: 88px;
+    min-height: 34px;
+    padding: 0 10px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.basemap-picker-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+    z-index: 1200;
+    min-width: 220px;
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.basemap-picker-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 12px 12px;
+    min-height: 44px;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.basemap-picker-item:last-child {
+    border-bottom: none;
+}
+
+.basemap-picker-item:active {
+    background: rgba(0,0,0,0.06);
+}
+
 .status-scale .leaflet-control-scale {
     margin: 0;
     background: transparent;
