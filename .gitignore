@@ -82,6 +82,12 @@ Thumbs.db
 *.tmp
 *.temp
 
+# PowerShell scripts (do not commit)
+*.ps1
+
+# Internal tooling
+.roo/
+
 # Project Documentation and Internal Scripts
 *.md
 .serena/
