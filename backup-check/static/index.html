@@ -137,7 +137,7 @@
         <!-- Mobile Controls -->
         <div class="mobile-controls">
             <button id="mobile-filters-toggle" class="mobile-toggle-btn">Filters</button>
-            <button id="mobile-search-toggle" class="mobile-toggle-btn">Search</button>
+            <button id="mobile-stats-toggle" class="mobile-toggle-btn">Stats</button>
         </div>
 
         <!-- Main Content -->
@@ -153,28 +153,10 @@
                     </svg>
                 </button>
                 <div class="sidebar-content">
-                    <!-- Top Tabs -->
-                    <div class="tab-nav" aria-label="Sidebar tabs">
-                        <button class="tab-button active" data-tab="filters" title="Filters" aria-label="Filters">
-                            <span class="tab-icon" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                </svg>
-                            </span>
-                            <span class="tab-label">Filters</span>
-                        </button>
-
-                        <button class="tab-button" data-tab="search" title="Search" aria-label="Search">
-                            <span class="tab-icon" aria-hidden="true">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <circle cx="11" cy="11" r="8"></circle>
-                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                </svg>
-                            </span>
-                            <span class="tab-label">Search</span>
-                        </button>
+                    <!-- Tab Navigation (Desktop Only) -->
+                    <div class="tab-nav">
+                        <button class="tab-button active" data-tab="filters">FILTERS</button>
+                        <button class="tab-button" data-tab="stats">STATISTICS</button>
                     </div>
 
                     <!-- Filters Tab Content -->
@@ -187,60 +169,36 @@
 
                         <!-- Filter Controls Container -->
                         <div id="filter-controls">
-                            <!-- Year Filter -->
+                            <!-- Year Filter (Single Year) -->
                             <div class="filter-group">
-                                <label>Year:</label>
-                                <button class="filter-selector" data-filter="year" id="year-filter-btn">
-                                    <span class="filter-selector-value">All Years</span>
-                                    <span class="filter-selector-badge" id="year-filter-badge"></span>
-                                    <svg class="filter-selector-arrow" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-                                <input type="hidden" id="year-filter" name="year" value="">
+                                <label for="year-filter">Specific Year:</label>
+                                <select id="year-filter" name="year" class="filter-select">
+                                    <option value="">All Years</option>
+                                </select>
                             </div>
 
                             <!-- Location Filter -->
                             <div class="filter-group">
-                                <label>Location:</label>
-                                <button class="filter-selector" data-filter="location" id="location-filter-btn">
-                                    <span class="filter-selector-value">All Locations</span>
-                                    <span class="filter-selector-badge" id="location-filter-badge"></span>
-                                    <svg class="filter-selector-arrow" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-                                <input type="hidden" id="location-filter" name="location" value="">
+                                <label for="location-filter">Location:</label>
+                                <select id="location-filter" name="location" class="filter-select">
+                                    <option value="">All Locations</option>
+                                </select>
                             </div>
 
                             <!-- Death Toll Filter -->
                             <div class="filter-group">
-                                <label>Death Toll:</label>
-                                <button class="filter-selector" data-filter="deathsToll" id="deaths-toll-filter-btn">
-                                    <span class="filter-selector-value">All Events</span>
-                                    <span class="filter-selector-badge" id="deaths-toll-filter-badge"></span>
-                                    <svg class="filter-selector-arrow" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-                                <input type="hidden" id="deaths-toll-filter" name="deathsToll" value="">
+                                <label for="deaths-toll-filter">Death Toll:</label>
+                                <select id="deaths-toll-filter" name="deathsToll" class="filter-select">
+                                    <option value="">All Events</option>
+                                </select>
                             </div>
 
                             <!-- Event Name Filter -->
                             <div class="filter-group">
-                                <label>Event Name:</label>
-                                <button class="filter-selector" data-filter="eventName" id="event-name-filter-btn">
-                                    <span class="filter-selector-value">All Events</span>
-                                    <span class="filter-selector-badge" id="event-name-filter-badge"></span>
-                                    <svg class="filter-selector-arrow" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </button>
-                                <input type="hidden" id="event-name-filter" name="eventName" value="">
+                                <label for="event-name-filter">Event Name:</label>
+                                <select id="event-name-filter" name="eventName" class="filter-select">
+                                    <option value="">All Events</option>
+                                </select>
                             </div>
 
                             <!-- Active Filters Summary -->
@@ -268,16 +226,24 @@
                         <div id="filter-error" class="filter-error hidden"></div>
                     </div>
 
-                    <!-- Search Tab Content -->
-                    <div class="tab-content" id="search-tab">
-                        <div class="search-panel">
-                            <label for="global-search-input" class="search-label">Global Search</label>
-                            <input id="global-search-input" type="text" class="search-input"
-                                placeholder="Search location or event name…" autocomplete="off" />
-                            <div id="global-search-results" class="search-results hidden" aria-live="polite"></div>
-                            <div id="global-search-selected" class="search-selected hidden"></div>
-                            <div class="search-hint">
-                                Tip: selecting a result applies the corresponding filter.
+                    <!-- Statistics Tab Content -->
+                    <div class="tab-content" id="stats-tab">
+                        <div id="stats-content">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Events</span>
+                                <span id="total-events" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Year Range</span>
+                                <span id="year-range" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Events with Deaths</span>
+                                <span id="events-deaths" class="stat-value">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Visible Points</span>
+                                <span id="visible-points" class="stat-value">0</span>
                             </div>
                         </div>
                     </div>
@@ -301,7 +267,13 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>Flood Event Details</h3>
-                    <button class="modal-close" id="close-flood">&times;</button>
+                    <button class="close" aria-label="Close modal">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
                 <div class="modal-body">
                     <div id="flood-details">
@@ -314,8 +286,8 @@
         <!-- Footer -->
         <footer class="footer">
             <div class="footer-content">
-                <span>Developed by <a href="mailto:alexliaskos@geol.uoa.gr" target="_blank" rel="noopener"
-                        style="color: inherit; text-decoration: none;">Alexandros Liaskos</a></span>
+                <span></span>Developed by <a href="mailto:alexliaskos@geol.uoa.gr" target="_blank" rel="noopener"
+                    style="color: inherit; text-decoration: underline;">Alexandros Liaskos</a></span>
                 <span class="footer-divider">|</span>
                 <button id="about-btn" class="references-btn">About</button>
                 <span class="footer-divider">|</span>
@@ -603,38 +575,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Filter Selection Modal -->
-        <div id="filter-selection-modal" class="modal filter-selection-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="filter-modal-title">Select Value</h3>
-                    <button class="modal-close" id="close-filter-selection">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="filter-modal-search">
-                        <input type="text" id="filter-modal-search-input" placeholder="Search..." autocomplete="off">
-                        <svg class="filter-modal-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.35-4.35"></path>
-                        </svg>
-                    </div>
-                    <div class="filter-modal-actions-top">
-                        <button id="filter-modal-clear" class="btn-filter-modal-clear">Clear Selection</button>
-                    </div>
-                    <div id="filter-modal-list" class="filter-modal-list">
-                        <!-- Available options will be populated here -->
-                    </div>
-                    <div id="filter-modal-unavailable-section" class="filter-modal-unavailable-section hidden">
-                        <div class="filter-modal-unavailable-header">Unavailable (filtered out)</div>
-                        <div id="filter-modal-unavailable-list" class="filter-modal-unavailable-list">
-                            <!-- Unavailable options will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Leaflet JS -->
@@ -646,11 +586,14 @@
     <!-- Supabase Configuration -->
     <script src="./config.js"></script>
 
+    <!-- Dropdown Limit Script -->
+    <script src="./simple-dropdown-limit.js"></script>
+
     <!-- Measurement Tool -->
     <script src="./measurement-tool.js"></script>
 
-    <!-- Modular Application (ES Modules) -->
-    <script type="module" src="./js/main.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="./app.js"></script>
 </body>
 
 </html>

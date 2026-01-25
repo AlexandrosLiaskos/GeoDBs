@@ -236,5 +236,3 @@ class MeasurementTool {
     }
 }
 
-window.MeasurementTool = MeasurementTool;
-
