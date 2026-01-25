@@ -1,6 +1,0 @@
- static/app.js                   | 2403 [31m---------------------------------------[m
- static/index.html               |  165 [32m++[m[31m-[m
- static/measurement-tool.js      |    2 [32m+[m
- static/simple-dropdown-limit.js |  239 [31m----[m
- static/styles.css               | 1165 [32m+++++++++++++++[m[31m----[m
- 5 files changed, 1052 insertions(+), 2922 deletions(-)
