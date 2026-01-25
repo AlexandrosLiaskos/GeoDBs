@@ -228,7 +228,9 @@ class MapManager {
         });
 
         this.map.addControl(new BasemapPickerControl());
-    }*
+    }
+
+    /**
      * Setup click-based behavior for layer control
      * @private
      */
