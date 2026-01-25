@@ -119,17 +119,116 @@ class MapManager {
             this.measurementTool = new window.MeasurementTool(this.map);
         }
 
-        // Layer control (added last, appears at bottom)
-        const layerControl = L.control.layers(this.baseMaps, null, {
-            position: 'topleft',
-            collapsed: true
-        }).addTo(this.map);
+        // Basemap selector
+        // On touch/mobile, Leaflet's built-in layers control can be flaky due to mixed pointer/touch/click behaviors.
+        // Use a small custom picker that is designed for tap interactions.
+        if (this.isTouchDevice()) {
+            this.addMobileBasemapPicker();
+        } else {
+            // Desktop: keep the standard Leaflet layers control.
+            const layerControl = L.control.layers(this.baseMaps, null, {
+                position: 'topleft',
+                collapsed: true
+            }).addTo(this.map);
 
-        // Make layer control click-based instead of hover
-        this.setupClickBasedLayerControl(layerControl);
+            // Make layer control click-based instead of hover
+            this.setupClickBasedLayerControl(layerControl);
+        }
     }
 
     /**
+     * Detect touch/coarse pointer devices.
+     * @private
+     */
+    isTouchDevice() {
+        return (
+            typeof window !== 'undefined' &&
+            (
+                'ontouchstart' in window ||
+                (window.matchMedia && window.matchMedia('(pointer: coarse)').matches)
+            )
+        );
+    }
+
+    /**
+     * Add a tap-friendly basemap picker for mobile.
+     * @private
+     */
+    addMobileBasemapPicker() {
+        const basemapNames = Object.keys(this.baseMaps);
+        if (!basemapNames.length) return;
+
+        const BasemapPickerControl = L.Control.extend({
+            options: { position: 'topleft' },
+
+            onAdd: () => {
+                const container = L.DomUtil.create(
+                    'div',
+                    'leaflet-bar leaflet-control basemap-picker'
+                );
+
+                const btn = L.DomUtil.create('button', 'basemap-picker-btn', container);
+                btn.type = 'button';
+                btn.textContent = 'Basemap';
+
+                const panel = L.DomUtil.create('div', 'basemap-picker-panel', container);
+                panel.setAttribute('role', 'menu');
+                panel.style.display = 'none';
+
+                const closePanel = () => {
+                    panel.style.display = 'none';
+                    container.classList.remove('basemap-picker-open');
+                };
+
+                const openPanel = () => {
+                    panel.style.display = 'block';
+                    container.classList.add('basemap-picker-open');
+                };
+
+                const togglePanel = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (panel.style.display === 'none') openPanel();
+                    else closePanel();
+                };
+
+                // Populate items
+                for (const name of basemapNames) {
+                    const item = L.DomUtil.create('button', 'basemap-picker-item', panel);
+                    item.type = 'button';
+                    item.textContent = name;
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.switchBasemap(name);
+                        closePanel();
+                    });
+
+                    item.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.switchBasemap(name);
+                        closePanel();
+                    }, { passive: false });
+                }
+
+                // Interaction handling
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.disableScrollPropagation(container);
+
+                btn.addEventListener('click', togglePanel);
+                btn.addEventListener('touchstart', togglePanel, { passive: false });
+
+                document.addEventListener('click', (e) => {
+                    if (!container.contains(e.target)) closePanel();
+                });
+
+                return container;
+            }
+        });
+
+        this.map.addControl(new BasemapPickerControl());
+    }*
      * Setup click-based behavior for layer control
      * @private
      */
