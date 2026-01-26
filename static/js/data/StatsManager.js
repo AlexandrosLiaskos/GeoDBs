@@ -35,34 +35,16 @@ class StatsManager {
      * @returns {Promise<Object>} Statistics object
      */
     async loadStats(filters = {}) {
-        if (!this.supabase) {
-            console.error('❌ StatsManager: Database not initialized');
-            return null;
-        }
-
         try {
-            // Fetch all stats in parallel for better performance
-            const [totalCount, minYear, maxYear, casualtiesCount] = await Promise.all([
-                this.fetchTotalCount(filters),
-                this.fetchMinYear(filters),
-                this.fetchMaxYear(filters),
-                this.fetchCasualtiesCount(filters)
-            ]);
-
-            const stats = {
-                total_events: totalCount,
-                year_range: { min: minYear, max: maxYear },
-                events_with_deaths: casualtiesCount
-            };
-
-            // Emit event
-            this.eventBus.emit('stats:updated', { stats, filters });
-
-            if (window.DEBUG_MODE) {
-                console.log('✅ StatsManager: Stats loaded', stats);
+            // Prefer already-loaded data (keeps working after DB lockdown)
+            const currentData = this.dataManager?.stateManager?.get('currentData');
+            if (Array.isArray(currentData) && currentData.length > 0) {
+                return this.calculateFromData(currentData);
             }
 
-            return stats;
+            // Fallback: fetch marker data and calculate
+            const data = await this.dataManager.fetchFloodData(filters);
+            return this.calculateFromData(data);
         } catch (error) {
             console.error('❌ StatsManager: Error loading stats', error);
             this.eventBus.emit('stats:error', { error, filters });
@@ -119,120 +101,6 @@ class StatsManager {
         return stats;
     }
 
-    /**
-     * Fetch total event count
-     * @private
-     */
-    async fetchTotalCount(filters) {
-        let query = this.supabase
-            .from('floods')
-            .select('*', { count: 'exact', head: true });
-
-        // Apply filters
-        if (filters.year) {
-            query = query.eq('year', filters.year);
-        }
-        if (filters.location) {
-            query = query.eq('location_name', filters.location);
-        }
-        if (filters.deathsToll !== null && filters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', filters.deathsToll);
-        }
-        if (filters.eventName) {
-            query = query.eq('flood_event_name', filters.eventName);
-        }
-
-        const { count, error } = await query;
-        if (error) throw error;
-
-        return count || 0;
-    }
-
-    /**
-     * Fetch minimum year
-     * @private
-     */
-    async fetchMinYear(filters) {
-        let query = this.supabase
-            .from('floods')
-            .select('year')
-            .not('year', 'is', null)
-            .order('year', { ascending: true })
-            .limit(1);
-
-        // Apply filters (exclude year filter for year range)
-        if (filters.location) {
-            query = query.eq('location_name', filters.location);
-        }
-        if (filters.deathsToll !== null && filters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', filters.deathsToll);
-        }
-        if (filters.eventName) {
-            query = query.eq('flood_event_name', filters.eventName);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        return data && data.length > 0 ? data[0].year : 'N/A';
-    }
-
-    /**
-     * Fetch maximum year
-     * @private
-     */
-    async fetchMaxYear(filters) {
-        let query = this.supabase
-            .from('floods')
-            .select('year')
-            .not('year', 'is', null)
-            .order('year', { ascending: false })
-            .limit(1);
-
-        // Apply filters (exclude year filter for year range)
-        if (filters.location) {
-            query = query.eq('location_name', filters.location);
-        }
-        if (filters.deathsToll !== null && filters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', filters.deathsToll);
-        }
-        if (filters.eventName) {
-            query = query.eq('flood_event_name', filters.eventName);
-        }
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        return data && data.length > 0 ? data[0].year : 'N/A';
-    }
-
-    /**
-     * Fetch count of events with casualties
-     * @private
-     */
-    async fetchCasualtiesCount(filters) {
-        let query = this.supabase
-            .from('floods')
-            .select('*', { count: 'exact', head: true })
-            .not('deaths_toll_int', 'is', null)
-            .gt('deaths_toll_int', 0);
-
-        // Apply filters (Note: deathsToll filter NOT applied here)
-        if (filters.year) {
-            query = query.eq('year', filters.year);
-        }
-        if (filters.location) {
-            query = query.eq('location_name', filters.location);
-        }
-        if (filters.eventName) {
-            query = query.eq('flood_event_name', filters.eventName);
-        }
-
-        const { count, error } = await query;
-        if (error) throw error;
-
-        return count || 0;
-    }
 }
 
 // Export for ES modules

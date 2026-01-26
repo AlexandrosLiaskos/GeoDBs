@@ -115,20 +115,23 @@ class FloodMapApplication {
                 const activeSqlFilter = this.stateManager.get('activeSqlFilter');
 
                 if (activeSqlFilter && activeSqlFilter.length > 0) {
-                    // Re-execute the SQL query with the new regular filters
-                    // The QueryBuilder.executeQuery() will pick up current filter values from DOM
-                    const data = await this.queryBuilder.executeQuery();
+                    // Re-fetch base data with the new regular filters, then apply SQL conditions client-side
+                    const baseData = await this.dataManager.fetchFloodData(filters);
+                    const data = this.queryBuilder.filterData(baseData, activeSqlFilter);
+
+                    // Keep state aligned with what is shown on the map
+                    this.stateManager.set('currentData', data);
+
                     this.markerManager.updateMarkers(data);
                     this.eventBus.emit('data:loaded', { count: data.length });
                     this.statsManager.calculateFromData(data);
-                    // Update filter options based on combined filtered data
                     this.dataManager.emitFilterOptionsFromData(data);
                 } else {
                     // No SQL filter active, just use regular filters
                     const data = await this.dataManager.fetchFloodData(filters);
                     this.markerManager.updateMarkers(data);
                     this.eventBus.emit('data:loaded', { count: data.length });
-                    await this.statsManager.loadStats(filters);
+                    this.statsManager.calculateFromData(data);
                 }
             } finally {
                 this.stateManager.set('isLoading', false);
@@ -157,7 +160,7 @@ class FloodMapApplication {
                 const data = await this.dataManager.fetchFloodData(cleanFilters);
                 this.markerManager.updateMarkers(data);
                 this.eventBus.emit('data:loaded', { count: data.length });
-                await this.statsManager.loadStats(cleanFilters);
+                this.statsManager.calculateFromData(data);
                 // Refresh filter options when SQL filter is cleared
                 await this.dataManager.fetchFilterOptions(cleanFilters);
                 // Update the active filters display to show remaining regular filters
@@ -221,11 +224,10 @@ class FloodMapApplication {
             const filterOptions = await this.dataManager.fetchFilterOptions({});
             this.queryBuilder.setFilterOptions(filterOptions);
 
-            await this.statsManager.loadStats({});
-
             const data = await this.dataManager.fetchFloodData({});
             this.markerManager.updateMarkers(data);
             this.eventBus.emit('data:loaded', { count: data.length });
+            this.statsManager.calculateFromData(data);
 
         } finally {
             this.stateManager.set('isLoading', false);

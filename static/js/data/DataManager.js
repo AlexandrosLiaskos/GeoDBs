@@ -24,7 +24,7 @@ class DataManager {
         this.BATCH_SIZE = 1000; // Supabase pagination size
         this.FILTER_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
         this.DETAILS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-        
+
         // Store all options (unfiltered) for comparison
         this.allOptions = null;
     }
@@ -68,9 +68,7 @@ class DataManager {
         }
 
         try {
-            const { count, error } = await this.supabase
-                .from('floods')
-                .select('*', { count: 'exact', head: true });
+            const { data: count, error } = await this.supabase.rpc('api_floods_count');
 
             if (error) {
                 console.error('❌ DataManager: Connection test failed', error);
@@ -111,45 +109,38 @@ class DataManager {
         }
 
         try {
-            // Build query
-            let query = this.supabase
-                .from('floods')
-                .select('id, latitude, longitude, year, location_name, deaths_toll_int, cause_of_flood')
-                .not('latitude', 'is', null)
-                .not('longitude', 'is', null);
+            const params = {
+                p_year: filters.year ?? null,
+                p_location_name: filters.location ?? null,
+                p_deaths_toll_int:
+                    filters.deathsToll !== null &&
+                    filters.deathsToll !== undefined &&
+                    filters.deathsToll !== ''
+                        ? parseInt(filters.deathsToll, 10)
+                        : null,
+                p_flood_event_name: filters.eventName ?? null
+            };
 
-            // Apply filters
-            if (filters.year) {
-                query = query.eq('year', filters.year);
-            }
-            if (filters.location) {
-                query = query.eq('location_name', filters.location);
-            }
-            if (filters.deathsToll !== null && filters.deathsToll !== undefined) {
-                query = query.eq('deaths_toll_int', filters.deathsToll);
-            }
-            if (filters.eventName) {
-                query = query.eq('flood_event_name', filters.eventName);
-            }
+            const { data, error } = await this.supabase.rpc('api_floods_markers', params);
+            if (error) throw error;
 
-            // Fetch with pagination
-            const data = await this.fetchAllRecords(query);
+            const rows = data ?? [];
 
             if (window.DEBUG_MODE) {
-                console.log(`✅ DataManager: Loaded ${data.length} flood records`, filters);
+                console.log(`✅ DataManager: Loaded ${rows.length} flood records`, filters);
             }
 
             // Update state
-            this.stateManager.set('currentData', data);
+            this.stateManager.set('currentData', rows);
 
             // Emit event
             this.eventBus.emit('data:loaded', {
-                data,
+                data: rows,
                 filters,
-                count: data.length
+                count: rows.length
             });
 
-            return data;
+            return rows;
         } catch (error) {
             console.error('❌ DataManager: Error fetching flood data', error);
             this.eventBus.emit('data:error', {
@@ -185,7 +176,7 @@ class DataManager {
                     this.fetchEventNames({}),
                     this.fetchCauseOfFlood({})
                 ]);
-                
+
                 this.allOptions = {
                     years: allYears,
                     locations: allLocations,
@@ -193,13 +184,13 @@ class DataManager {
                     eventNames: allEventNames,
                     causeOfFlood: allCauseOfFlood
                 };
-                
+
                 this.cacheManager.set('allFilterOptions', this.allOptions, this.FILTER_CACHE_TTL);
             }
         }
 
         // Check cache if no filters are selected
-        if (Object.keys(selectedFilters).length === 0 || 
+        if (Object.keys(selectedFilters).length === 0 ||
             Object.values(selectedFilters).every(v => v === null || v === '')) {
             const cached = this.cacheManager.get('filterOptions');
             if (cached) {
@@ -278,23 +269,21 @@ class DataManager {
      * @private
      */
     async fetchYears(selectedFilters) {
-        let query = this.supabase
-            .from('floods')
-            .select('year')
-            .not('year', 'is', null);
+        const params = {
+            p_location_name: selectedFilters.location ?? null,
+            p_deaths_toll_int:
+                selectedFilters.deathsToll !== null &&
+                selectedFilters.deathsToll !== undefined &&
+                selectedFilters.deathsToll !== ''
+                    ? parseInt(selectedFilters.deathsToll, 10)
+                    : null,
+            p_flood_event_name: selectedFilters.eventName ?? null
+        };
 
-        if (selectedFilters.location) {
-            query = query.eq('location_name', selectedFilters.location);
-        }
-        if (selectedFilters.deathsToll !== null && selectedFilters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', selectedFilters.deathsToll);
-        }
-        if (selectedFilters.eventName) {
-            query = query.eq('flood_event_name', selectedFilters.eventName);
-        }
+        const { data, error } = await this.supabase.rpc('api_floods_filter_years', params);
+        if (error) throw error;
 
-        const data = await this.fetchAllRecords(query);
-        return this.getUniqueValues(data, 'year');
+        return this.getUniqueValues(data ?? [], 'year');
     }
 
     /**
@@ -302,23 +291,21 @@ class DataManager {
      * @private
      */
     async fetchLocations(selectedFilters) {
-        let query = this.supabase
-            .from('floods')
-            .select('location_name')
-            .not('location_name', 'is', null);
+        const params = {
+            p_year: selectedFilters.year ?? null,
+            p_deaths_toll_int:
+                selectedFilters.deathsToll !== null &&
+                selectedFilters.deathsToll !== undefined &&
+                selectedFilters.deathsToll !== ''
+                    ? parseInt(selectedFilters.deathsToll, 10)
+                    : null,
+            p_flood_event_name: selectedFilters.eventName ?? null
+        };
 
-        if (selectedFilters.year) {
-            query = query.eq('year', selectedFilters.year);
-        }
-        if (selectedFilters.deathsToll !== null && selectedFilters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', selectedFilters.deathsToll);
-        }
-        if (selectedFilters.eventName) {
-            query = query.eq('flood_event_name', selectedFilters.eventName);
-        }
+        const { data, error } = await this.supabase.rpc('api_floods_filter_locations', params);
+        if (error) throw error;
 
-        const data = await this.fetchAllRecords(query);
-        return this.getUniqueValues(data, 'location_name');
+        return this.getUniqueValues(data ?? [], 'location_name');
     }
 
     /**
@@ -326,23 +313,16 @@ class DataManager {
      * @private
      */
     async fetchDeathsToll(selectedFilters) {
-        let query = this.supabase
-            .from('floods')
-            .select('deaths_toll_int')
-            .not('deaths_toll_int', 'is', null);
+        const params = {
+            p_year: selectedFilters.year ?? null,
+            p_location_name: selectedFilters.location ?? null,
+            p_flood_event_name: selectedFilters.eventName ?? null
+        };
 
-        if (selectedFilters.year) {
-            query = query.eq('year', selectedFilters.year);
-        }
-        if (selectedFilters.location) {
-            query = query.eq('location_name', selectedFilters.location);
-        }
-        if (selectedFilters.eventName) {
-            query = query.eq('flood_event_name', selectedFilters.eventName);
-        }
+        const { data, error } = await this.supabase.rpc('api_floods_filter_deaths_toll', params);
+        if (error) throw error;
 
-        const data = await this.fetchAllRecords(query);
-        return this.getUniqueValues(data, 'deaths_toll_int');
+        return this.getUniqueValues(data ?? [], 'deaths_toll_int');
     }
 
     /**
@@ -350,24 +330,21 @@ class DataManager {
      * @private
      */
     async fetchEventNames(selectedFilters) {
-        let query = this.supabase
-            .from('floods')
-            .select('flood_event_name')
-            .not('flood_event_name', 'is', null)
-            .not('flood_event_name', 'eq', '');
+        const params = {
+            p_year: selectedFilters.year ?? null,
+            p_location_name: selectedFilters.location ?? null,
+            p_deaths_toll_int:
+                selectedFilters.deathsToll !== null &&
+                selectedFilters.deathsToll !== undefined &&
+                selectedFilters.deathsToll !== ''
+                    ? parseInt(selectedFilters.deathsToll, 10)
+                    : null
+        };
 
-        if (selectedFilters.year) {
-            query = query.eq('year', selectedFilters.year);
-        }
-        if (selectedFilters.location) {
-            query = query.eq('location_name', selectedFilters.location);
-        }
-        if (selectedFilters.deathsToll !== null && selectedFilters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', selectedFilters.deathsToll);
-        }
+        const { data, error } = await this.supabase.rpc('api_floods_filter_event_names', params);
+        if (error) throw error;
 
-        const data = await this.fetchAllRecords(query);
-        return this.getUniqueValues(data, 'flood_event_name');
+        return this.getUniqueValues(data ?? [], 'flood_event_name');
     }
 
     /**
@@ -375,24 +352,21 @@ class DataManager {
      * @private
      */
     async fetchCauseOfFlood(selectedFilters) {
-        let query = this.supabase
-            .from('floods')
-            .select('cause_of_flood')
-            .not('cause_of_flood', 'is', null)
-            .not('cause_of_flood', 'eq', '');
+        const params = {
+            p_year: selectedFilters.year ?? null,
+            p_location_name: selectedFilters.location ?? null,
+            p_deaths_toll_int:
+                selectedFilters.deathsToll !== null &&
+                selectedFilters.deathsToll !== undefined &&
+                selectedFilters.deathsToll !== ''
+                    ? parseInt(selectedFilters.deathsToll, 10)
+                    : null
+        };
 
-        if (selectedFilters.year) {
-            query = query.eq('year', selectedFilters.year);
-        }
-        if (selectedFilters.location) {
-            query = query.eq('location_name', selectedFilters.location);
-        }
-        if (selectedFilters.deathsToll !== null && selectedFilters.deathsToll !== undefined) {
-            query = query.eq('deaths_toll_int', selectedFilters.deathsToll);
-        }
+        const { data, error } = await this.supabase.rpc('api_floods_filter_causes', params);
+        if (error) throw error;
 
-        const data = await this.fetchAllRecords(query);
-        return this.getUniqueValues(data, 'cause_of_flood');
+        return this.getUniqueValues(data ?? [], 'cause_of_flood');
     }
 
     /**
@@ -416,27 +390,27 @@ class DataManager {
         }
 
         try {
-            const { data, error } = await this.supabase
-                .from('floods')
-                .select('id, date_of_commencement, year, latitude, longitude, location_name, flood_event_name, deaths_toll_int, rainfall_duration, cause_of_flood, rainfall_height, relevant_information, source')
-                .eq('id', id)
-                .single();
-
+            const { data, error } = await this.supabase.rpc('api_floods_details', { p_id: id });
             if (error) throw error;
 
+            const row = Array.isArray(data) ? data[0] : data;
+            if (!row) {
+                throw new Error(`Flood event not found (#${id})`);
+            }
+
             // Add default reference if not present
-            if (!data.reference) {
-                data.reference = 'https://doi.org/10.3390/cli11110226';
+            if (!row.reference) {
+                row.reference = 'https://doi.org/10.3390/cli11110226';
             }
 
             // Cache the result
-            this.cacheManager.set(cacheKey, data, this.DETAILS_CACHE_TTL);
+            this.cacheManager.set(cacheKey, row, this.DETAILS_CACHE_TTL);
 
             if (window.DEBUG_MODE) {
                 console.log(`✅ DataManager: Loaded flood details for #${id}`);
             }
 
-            return data;
+            return row;
         } catch (error) {
             console.error(`❌ DataManager: Error fetching flood details for #${id}`, error);
             this.eventBus.emit('data:error', {
@@ -542,14 +516,14 @@ class DataManager {
             console.log('🗑️ DataManager: Cache invalidated');
         }
     }
-    
+
     /**
      * Get all options (unfiltered)
      */
     getAllOptions() {
         return this.allOptions;
     }
-    
+
     /**
      * Calculate filter options from a given dataset
      * Used when SQL query filter is applied to show available options from filtered data
@@ -566,7 +540,7 @@ class DataManager {
                 causeOfFlood: []
             };
         }
-        
+
         const options = {
             years: this.getUniqueValues(data, 'year'),
             locations: this.getUniqueValues(data, 'location_name'),
@@ -574,7 +548,7 @@ class DataManager {
             eventNames: this.getUniqueValues(data, 'flood_event_name'),
             causeOfFlood: this.getUniqueValues(data, 'cause_of_flood')
         };
-        
+
         if (window.DEBUG_MODE) {
             console.log('📊 DataManager: Calculated options from data', {
                 years: options.years.length,
@@ -584,17 +558,17 @@ class DataManager {
                 causeOfFlood: options.causeOfFlood.length
             });
         }
-        
+
         return options;
     }
-    
+
     /**
      * Emit filter options based on SQL-filtered data
      * @param {Array} data - SQL-filtered flood records
      */
     emitFilterOptionsFromData(data) {
         const options = this.calculateOptionsFromData(data);
-        
+
         // Emit event with both filtered options and all options
         this.eventBus.emit('filterOptions:loaded', {
             options,
@@ -602,7 +576,7 @@ class DataManager {
             selectedFilters: {},
             isSqlFiltered: true
         });
-        
+
         return options;
     }
 }
