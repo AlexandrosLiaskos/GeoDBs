@@ -121,10 +121,8 @@ class DataManager {
                 p_flood_event_name: filters.eventName ?? null
             };
 
-            const { data, error } = await this.supabase.rpc('api_floods_markers', params);
-            if (error) throw error;
-
-            const rows = data ?? [];
+            const query = this.supabase.rpc('api_floods_markers', params);
+            const rows = await this.fetchAllRecords(query);
 
             if (window.DEBUG_MODE) {
                 console.log(`✅ DataManager: Loaded ${rows.length} flood records`, filters);
@@ -280,10 +278,10 @@ class DataManager {
             p_flood_event_name: selectedFilters.eventName ?? null
         };
 
-        const { data, error } = await this.supabase.rpc('api_floods_filter_years', params);
-        if (error) throw error;
+        const query = this.supabase.rpc('api_floods_filter_years', params);
+        const rows = await this.fetchAllRecords(query);
 
-        return this.getUniqueValues(data ?? [], 'year');
+        return this.getUniqueValues(rows, 'year');
     }
 
     /**
@@ -302,10 +300,10 @@ class DataManager {
             p_flood_event_name: selectedFilters.eventName ?? null
         };
 
-        const { data, error } = await this.supabase.rpc('api_floods_filter_locations', params);
-        if (error) throw error;
+        const query = this.supabase.rpc('api_floods_filter_locations', params);
+        const rows = await this.fetchAllRecords(query);
 
-        return this.getUniqueValues(data ?? [], 'location_name');
+        return this.getUniqueValues(rows, 'location_name');
     }
 
     /**
@@ -319,10 +317,10 @@ class DataManager {
             p_flood_event_name: selectedFilters.eventName ?? null
         };
 
-        const { data, error } = await this.supabase.rpc('api_floods_filter_deaths_toll', params);
-        if (error) throw error;
+        const query = this.supabase.rpc('api_floods_filter_deaths_toll', params);
+        const rows = await this.fetchAllRecords(query);
 
-        return this.getUniqueValues(data ?? [], 'deaths_toll_int');
+        return this.getUniqueValues(rows, 'deaths_toll_int');
     }
 
     /**
@@ -341,10 +339,10 @@ class DataManager {
                     : null
         };
 
-        const { data, error } = await this.supabase.rpc('api_floods_filter_event_names', params);
-        if (error) throw error;
+        const query = this.supabase.rpc('api_floods_filter_event_names', params);
+        const rows = await this.fetchAllRecords(query);
 
-        return this.getUniqueValues(data ?? [], 'flood_event_name');
+        return this.getUniqueValues(rows, 'flood_event_name');
     }
 
     /**
@@ -363,10 +361,10 @@ class DataManager {
                     : null
         };
 
-        const { data, error } = await this.supabase.rpc('api_floods_filter_causes', params);
-        if (error) throw error;
+        const query = this.supabase.rpc('api_floods_filter_causes', params);
+        const rows = await this.fetchAllRecords(query);
 
-        return this.getUniqueValues(data ?? [], 'cause_of_flood');
+        return this.getUniqueValues(rows, 'cause_of_flood');
     }
 
     /**
