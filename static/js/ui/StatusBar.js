@@ -1,6 +1,6 @@
 /**
  * StatusBar - Full-width status bar at the bottom of the map
- * 
+ *
  * Displays scale, statistics and connection status.
  * Black background, white text, professional appearance.
  */
@@ -30,7 +30,6 @@ class StatusBar {
         this.createScaleBar();
         this.setupEventListeners();
         this.setupConnectionMonitor();
-        this.fetchGlobalTotal();
 
         if (window.DEBUG_MODE) {
             console.log('✅ StatusBar: Initialized');
@@ -41,30 +40,12 @@ class StatusBar {
         this.map.attributionControl.remove();
     }
 
-    async fetchGlobalTotal() {
-        const supabase = window.supabaseClient;
-        if (!supabase) return;
-
-        try {
-            const { count, error } = await supabase
-                .from('floods')
-                .select('*', { count: 'exact', head: true });
-
-            if (!error && count !== null) {
-                this.globalTotal = count;
-                this.updateTotalEvents(count);
-            }
-        } catch (error) {
-            console.error('StatusBar: Error fetching global total', error);
-        }
-    }
-
     createStatusBar() {
         const mapContainer = this.map.getContainer();
-        
+
         this.container = document.createElement('div');
         this.container.className = 'map-status-bar';
-        
+
         this.container.innerHTML = `
             <div class="status-bar-left">
                 <div class="status-scale" id="status-scale"></div>
@@ -110,6 +91,12 @@ class StatusBar {
     setupEventListeners() {
         this.eventBus.on('data:loaded', ({ count }) => {
             this.updateFilteredEvents(count);
+
+            // First ever load (no filters) acts as the global total
+            if (this.globalTotal === null || this.globalTotal === undefined) {
+                this.globalTotal = count;
+                this.updateTotalEvents(count);
+            }
         });
     }
 

@@ -422,7 +422,9 @@ class QueryBuilder {
         try {
             this.eventBus.emit('ui:showLoading');
 
-            const data = await this.executeQuery();
+            // Apply SQL-like conditions on the already-loaded dataset (no direct DB access)
+            const baseData = this.stateManager.get('currentData') || [];
+            const data = this.filterData(baseData, this.conditions);
 
             this.stateManager.set('activeSqlFilter', JSON.parse(JSON.stringify(this.conditions)));
 
@@ -450,44 +452,97 @@ class QueryBuilder {
     }
 
     async executeQuery() {
-        const supabase = window.supabaseClient;
-        if (!supabase) {
-            throw new Error('Database not initialized');
-        }
-
-        let query = supabase
-            .from('floods')
-            .select('id, latitude, longitude, year, location_name, flood_event_name, deaths_toll, deaths_toll_int, cause_of_flood')
-            .not('latitude', 'is', null)
-            .not('longitude', 'is', null);
-
-        // Apply regular filters first (AND logic with SQL query)
-        const activeFilters = this.getActiveRegularFilters();
-        if (activeFilters.year) {
-            query = query.eq('year', activeFilters.year);
-        }
-        if (activeFilters.location) {
-            query = query.eq('location_name', activeFilters.location);
-        }
-        if (activeFilters.deathsToll !== null && activeFilters.deathsToll !== undefined && activeFilters.deathsToll !== '') {
-            query = query.eq('deaths_toll_int', activeFilters.deathsToll);
-        }
-        if (activeFilters.eventName) {
-            query = query.eq('flood_event_name', activeFilters.eventName);
-        }
-
-        // Apply SQL query conditions
-        query = this.applyQueryConditions(query, this.conditions);
-
-        const data = await this.fetchAllRecords(query);
-
-        if (window.DEBUG_MODE) {
-            console.log(`QueryBuilder returned ${data.length} records (with regular filters:`, activeFilters, ')');
-        }
-
-        return data;
+        // Legacy hook (used by main.js): filter already-loaded data
+        const baseData = this.stateManager.get('currentData') || [];
+        return this.filterData(baseData, this.conditions);
     }
-    
+
+    /**
+     * Filter an array of records using the query-builder condition tree.
+     * This runs fully client-side to avoid direct database access.
+     */
+    filterData(data, conditions) {
+        if (!Array.isArray(data) || data.length === 0) {
+            return [];
+        }
+
+        const validConditions = this.getValidConditions(conditions);
+        if (validConditions.length === 0) {
+            return data;
+        }
+
+        return data.filter((row) => this.evaluateConditionList(row, conditions));
+    }
+
+    evaluateConditionList(row, conditions) {
+        let result = null;
+
+        for (const item of conditions) {
+            const itemResult = item.isGroup
+                ? this.evaluateConditionList(row, item.conditions || [])
+                : this.evaluateSingleCondition(row, item);
+
+            if (result === null) {
+                result = itemResult;
+                continue;
+            }
+
+            result = item.logic === 'OR' ? (result || itemResult) : (result && itemResult);
+        }
+
+        return result ?? true;
+    }
+
+    evaluateSingleCondition(row, cond) {
+        const field = cond.field;
+        const operator = cond.operator;
+        const value = cond.value;
+        const fieldValue = row?.[field];
+
+        if (operator === 'is_null') {
+            return fieldValue === null || fieldValue === undefined || fieldValue === '';
+        }
+
+        if (operator === 'is_not_null') {
+            return !(fieldValue === null || fieldValue === undefined || fieldValue === '');
+        }
+
+        // For other operators, empty value means "not a real condition"
+        if (value === undefined || value === '') {
+            return true;
+        }
+
+        const isNumberField = typeof fieldValue === 'number' || (typeof fieldValue === 'string' && fieldValue !== '' && !Number.isNaN(Number(fieldValue)));
+
+        const left = isNumberField ? Number(fieldValue) : String(fieldValue ?? '');
+        const right = isNumberField ? Number(value) : String(value);
+
+        switch (operator) {
+            case 'eq':
+                return left === right;
+            case 'neq':
+                return left !== right;
+            case 'gt':
+                return left > right;
+            case 'gte':
+                return left >= right;
+            case 'lt':
+                return left < right;
+            case 'lte':
+                return left <= right;
+            case 'ilike':
+                return String(left).toLowerCase().includes(String(right).toLowerCase());
+            case 'not_ilike':
+                return !String(left).toLowerCase().includes(String(right).toLowerCase());
+            case 'starts':
+                return String(left).toLowerCase().startsWith(String(right).toLowerCase());
+            case 'ends':
+                return String(left).toLowerCase().endsWith(String(right).toLowerCase());
+            default:
+                return true;
+        }
+    }
+
     /**
      * Get active regular filters from the DOM
      */
@@ -496,7 +551,7 @@ class QueryBuilder {
         const locationEl = document.getElementById('location-filter');
         const deathsTollEl = document.getElementById('deaths-toll-filter');
         const eventNameEl = document.getElementById('event-name-filter');
-        
+
         const yearValue = yearEl?.value;
         return {
             year: yearValue ? parseInt(yearValue, 10) : null,
@@ -506,28 +561,7 @@ class QueryBuilder {
         };
     }
 
-    async fetchAllRecords(baseQuery) {
-        const pageSize = 1000;
-        let allRecords = [];
-        let offset = 0;
-        let hasMore = true;
-
-        while (hasMore) {
-            const { data, error } = await baseQuery.range(offset, offset + pageSize - 1);
-
-            if (error) throw error;
-
-            if (data && data.length > 0) {
-                allRecords = allRecords.concat(data);
-                offset += data.length;
-                hasMore = data.length === pageSize;
-            } else {
-                hasMore = false;
-            }
-        }
-
-        return allRecords;
-    }
+    // fetchAllRecords removed: queries are now client-side
 
     getValidConditions(conditions) {
         const valid = [];
