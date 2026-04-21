@@ -98,10 +98,16 @@ class ModalManager {
     setupWelcomeModal() {
         const welcomeModal = this.modals.get(this.MODAL_IDS.WELCOME);
         if (welcomeModal) {
-            // Show welcome modal with delay
-            setTimeout(() => {
-                this.openModal(this.MODAL_IDS.WELCOME);
-            }, 300);
+            // Skip the splash when embedded (?embed=1) so the map is visible
+            // immediately inside an iframe preview.
+            const isEmbedded = new URLSearchParams(window.location.search).get('embed') === '1';
+
+            if (!isEmbedded) {
+                // Show welcome modal with delay
+                setTimeout(() => {
+                    this.openModal(this.MODAL_IDS.WELCOME);
+                }, 300);
+            }
 
             // Setup "Enter Map" button to close welcome modal
             const enterBtn = document.getElementById('enter-webgis');
